@@ -87,7 +87,7 @@ const opening = (tab: string, resourceId?: string) => resourceId === undefined
       view: {
         ...projectView,
         content: "new-tab.launcher",
-        contextId: "new-tab.create"
+        contextId: "new-tab.templates"
       }
     })
   : ({
@@ -269,6 +269,79 @@ describe("submitting", () => {
     assert.equal("resourceId" in (opened ?? {}), false);
   });
 
+  it.each([
+    ["project-overview.resource", { kind: "document", id: "documents:k57" }],
+    ["project-overview.file", { kind: "file", id: "externalFiles:one" }],
+    ["project-overview.connector", { kind: "connector", id: "connectors:one" }],
+    ["agents.task", { kind: "task", id: "agentTasks:one" }]
+  ] as const)("saves, reloads, and consumes a New Tab inspecting %s", async (inspected, selection) => {
+    const opened = await submitWorkspaceChanges(sending(0, [
+      opening("launcher"),
+      { op: "activate", was: "project-overview", now: "launcher" }
+    ]));
+    assert.deepEqual(opened, { accepted: true, revision: 1, merged: false });
+
+    const selected = await submitWorkspaceChanges(sending(1, [{
+      op: "inspect",
+      tab: "launcher",
+      was: "empty",
+      now: inspected,
+      wasSelection: null,
+      selection
+    }]));
+    assert.deepEqual(selected, { accepted: true, revision: 2, merged: false });
+    const reloaded = await readWorkspaceState();
+    assert.ok(reloaded);
+    assert.equal(reloaded.activeId, "launcher");
+    assert.equal(reloaded.views.launcher.inspected, inspected);
+    assert.deepEqual(reloaded.views.launcher.selection, selection);
+    assert.equal(reloaded.views.launcher.contextId, "new-tab.templates");
+
+    const consumed = await submitWorkspaceChanges(sending(2, [
+      { ...opening("document", "documents:k57"), at: reloaded.tabs.length },
+      { op: "activate", was: "launcher", now: "document" },
+      {
+        op: "close",
+        tab: "launcher",
+        at: reloaded.tabs.findIndex((tab) => tab.id === "launcher"),
+        target: { category: "new-tab" },
+        view: reloaded.views.launcher
+      }
+    ]));
+    assert.deepEqual(consumed, { accepted: true, revision: 3, merged: false });
+    const afterClose = await readWorkspaceState();
+    assert.ok(afterClose);
+    assert.equal(afterClose.revision, 3);
+    assert.equal(afterClose.activeId, "document");
+    assert.equal(afterClose.tabs.some((tab) => tab.id === "launcher"), false);
+    assert.equal("launcher" in afterClose.views, false);
+    assert.deepEqual(afterClose.tabs.find((tab) => tab.id === "document"), {
+      id: "document", category: "document-editor", resourceId: "documents:k57"
+    });
+    assert.equal(model.tables.workspaceRevisions.length, 3);
+  });
+
+  it.each(["templates.template", "document-editor.text-block"])(
+    "refuses unrelated %s inspection on New Tab without publishing another revision",
+    async (inspected) => {
+      await submitWorkspaceChanges(sending(0, [opening("launcher")]));
+      const answer = await submitWorkspaceChanges(sending(1, [{
+        op: "inspect",
+        tab: "launcher",
+        was: "empty",
+        now: inspected,
+        wasSelection: null,
+        selection: { kind: "resource", id: "documents:k57" }
+      }]));
+      assert.equal(answer.accepted, false);
+      assert.match(answer.accepted ? "" : answer.detail, /cannot hold that view/);
+      assert.equal(snapshots()[0].revision, 1);
+      assert.equal(model.tables.workspaceRevisions.length, 1);
+      const reloaded = await readWorkspaceState();
+      assert.equal(reloaded?.views.launcher.inspected, "empty");
+    }
+  );
+
   it("replaces the one row rather than adding a second", async () => {
     await submitWorkspaceChanges(sending(0, [opening("t1")]));
     model.calls.length = 0;
@@ -375,7 +448,7 @@ describe("submitting", () => {
       was: {
         content: "new-tab.launcher",
         focus: null,
-        contextId: "new-tab.create",
+        contextId: "new-tab.templates",
         inspected: "empty",
         selection: null
       },

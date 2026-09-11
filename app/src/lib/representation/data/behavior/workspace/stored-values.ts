@@ -52,6 +52,13 @@ const inspectorForCategory = (
 ): boolean => {
   if (inspected.startsWith(`${category}.`) || inspected.startsWith("general.")) return true;
   if (inspected === "project-overview.activity") return true;
+  // New Tab's resource table uses the Overview lens and its actor links.
+  if (category === "new-tab") return [
+    "project-overview.resource",
+    "project-overview.file",
+    "project-overview.connector",
+    "agents.task"
+  ].includes(inspected);
   return category === "project-overview" &&
     (inspected === "agents.task" || inspected === "agents.persona");
 };

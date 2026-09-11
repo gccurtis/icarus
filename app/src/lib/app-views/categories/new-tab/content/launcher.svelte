@@ -1,410 +1,144 @@
 <script lang="ts">
-  import { onMount } from "svelte";
-
-  import ChartColumn from "@lucide/svelte/icons/chart-column";
-  import File from "@lucide/svelte/icons/file";
-  import FileText from "@lucide/svelte/icons/file-text";
-  import Layers from "@lucide/svelte/icons/layers";
-  import LayoutTemplate from "@lucide/svelte/icons/layout-template";
-  import Lightbulb from "@lucide/svelte/icons/lightbulb";
-  import MessageCircleQuestionMark from "@lucide/svelte/icons/message-circle-question-mark";
-  import Plug from "@lucide/svelte/icons/plug";
-  import Presentation from "@lucide/svelte/icons/presentation";
-  import Search from "@lucide/svelte/icons/search";
-  import TableIcon from "@lucide/svelte/icons/table";
-
-  import {
-    ScreenCard,
-    ScreenEmpty,
-    ScreenGroup,
-    ScreenNote,
-    ScreenShelf,
-    ScreenShelfItem,
-    ScreenSurface,
-    ScreenThumb
-  } from "$authored-components/screen";
+  import { ScreenCard, ScreenEmpty, ScreenGroup, ScreenNote, ScreenShelf, ScreenShelfItem, ScreenSurface, ScreenThumb } from "$authored-components/screen";
   import { Button } from "$vendored-components/button";
-  import * as InputGroup from "$vendored-components/input-group";
-  import type { ResourceKind } from "$app-views/categories/new-tab/procedures/cast";
-  import {
-    editorKinds,
-    kindLabel,
-    templates,
-    type EditorKind,
-    type LibraryTemplate
-  } from "$app-views/categories/new-tab/procedures/library";
-  import { createsEditorResource } from "$app-views/categories/new-tab/procedures/creating-editor-resource";
-  import { openingFor } from "$app-views/categories/new-tab/procedures/opening";
-  import { project } from "$app-views/categories/new-tab/procedures/project";
-  import {
-    recentsOf,
-    resourcesOf
-  } from "$app-views/categories/new-tab/procedures/resources";
-  import { readProjectResourceIndex } from "$capabilities/project-resources/index.remote";
+  import ProjectResources from "$app-views/categories/new-tab/components/project-resources.svelte";
+  import { LauncherState } from "$app-views/categories/new-tab/content/launcher.state.svelte";
+  import { CREATE, RESOURCE_ICON, RESOURCE_LABEL } from "$app-views/categories/new-tab/procedures/options";
+  import { createResource } from "$app-views/categories/new-tab/procedures/create-resource";
+  import { keepLauncherCurrent } from "$app-views/categories/new-tab/procedures/effects/launcher.svelte";
+  import { launchResource } from "$app-views/categories/new-tab/procedures/launch-resource";
+  import { inspectResource } from "$app-views/categories/new-tab/procedures/inspect-resource";
+  import { recentsOf } from "$app-views/categories/new-tab/procedures/resources";
+  import { launcherResources } from "$app-views/categories/new-tab/procedures/read-resources";
   import { workspaceState } from "$model/client/workspace-state";
 
   const view = workspaceState();
-
-  /**
-   * New Tab — the only state this category has.
-   *
-   * `docs/screen-panel-views/screens/new-tab/workspace.md` is the specification.
-   * A funnel, top to bottom, answering one question: which editor do you need?
-   * Find the thing you meant, or make one of three, or start from something that
-   * already exists.
-   *
-   * **The tracks are the specification's table exactly.** One column, and six
-   * bands of which Recent and Templates take two each — twice the weight of the
-   * search and the pills, because two shelves of cards are what the reader
-   * actually spends time in. The bands stay content-sized rather than
-   * proportional: the surface scrolls, and a shelf stretched to fill a tall plane
-   * is a shelf with a stripe of empty well under its cards.
-   *
-   * **Results drop under the field rather than replacing the bands below.** The
-   * specification leaves that open; replacing them is a mode change inside a tab
-   * whose whole job is one question, and a mode change nobody asked for is worse
-   * than a list that pushes the shelves down.
-   *
-   * Represented resources keep the capability's canonical id all the way into
-   * the destination. A launcher must never turn display copy into identity: a
-   * title-shaped id produces a tab that no store row can answer.
-   */
-  const kinds = $derived(editorKinds().current);
-  const all = $derived(templates().current);
-  /** The name is data, so it comes from the project door rather than from view state. */
-  const projectName = $derived(project().current.name);
-
-  let now = $state(Date.now());
-  onMount(() => {
-    const timer = setInterval(() => (now = Date.now()), 60_000);
-    return () => clearInterval(timer);
-  });
-
-  const resourceIndex = readProjectResourceIndex();
-  const indexed = $derived(resourceIndex.ready ? resourceIndex.current : undefined);
-  const recent = $derived(recentsOf(indexed, now));
-  const everything = $derived(resourcesOf(indexed, now));
-
-  /** Which template last handed the inspector its variables. */
-  let chosen = $state<string | undefined>(undefined);
-
-  let query = $state("");
-  const needle = $derived(query.trim().toLowerCase());
-  const results = $derived(
-    needle === "" ? [] : everything.filter((row) => row.name.toLowerCase().includes(needle))
-  );
-
-  const EDITOR_ICON: Record<EditorKind["name"], typeof FileText> = {
-    Document: FileText,
-    "Presentation": Presentation,
-    Spreadsheet: TableIcon
-  };
-
-  /** The same icon a kind wears in the Recent panel, so one thing looks like itself. */
-  const KIND_ICON: Record<ResourceKind, typeof FileText> = {
-    document: FileText,
-    presentation: Presentation,
-    spreadsheet: TableIcon,
-    research: MessageCircleQuestionMark,
-    analysis: ChartColumn,
-    file: File,
-    finding: Lightbulb,
-    connector: Plug,
-    context: Layers,
-    template: LayoutTemplate
-  };
-
-  /** A thumbnail stands for the shape of the thing, so the ratio has to be its own. */
-  const KIND_RATIO: Record<ResourceKind, string> = {
-    document: "4 / 3",
-    presentation: "16 / 9",
-    spreadsheet: "1 / 1",
-    research: "4 / 3",
-    analysis: "4 / 3",
-    file: "4 / 3",
-    finding: "4 / 3",
-    connector: "4 / 3",
-    context: "4 / 3",
-    template: "4 / 3"
-  };
-
-  const MAKES_RATIO: Record<LibraryTemplate["makes"], string> = {
-    Document: "4 / 3",
-    "Presentation": "16 / 9",
-    Slide: "16 / 9",
-    Spreadsheet: "1 / 1"
-  };
-
-  const MAKES_ICON: Record<LibraryTemplate["makes"], typeof FileText> = {
-    Document: FileText,
-    "Presentation": Presentation,
-    Slide: Presentation,
-    Spreadsheet: TableIcon
-  };
-
-  /**
-   * Slide templates are left out. One makes a single slide, which is not an
-   * editor this tab can open, so it would be a card that cannot answer the only
-   * question the category asks.
-   */
-  const startable = $derived(all.filter((row) => row.makes !== "Slide"));
-
-  /** What decides whether a template can be taken, on the card rather than behind it. */
-  const asks = (row: LibraryTemplate) =>
-    row.variables === 0
-      ? row.makes
-      : `${row.makes} · ${row.variables} ${row.variables === 1 ? "variable" : "variables"}`;
-
-  const blocked = $derived(startable.filter((row) => row.variables > 0).length);
-
-  let creating = $state<"Document" | "Presentation" | "Spreadsheet">();
-  let creationError = $state<string>();
-
-  /** Create the represented row and leader snapshot before the editor consumes its id. */
-  const create = (kind: EditorKind) =>
-    void createsEditorResource({
-      view,
-      kind,
-      busy: () => creating !== undefined,
-      began: (name) => {
-        creating = name;
-      },
-      refused: (message) => {
-        creationError = message;
-      },
-      ended: () => {
-        creating = undefined;
-      }
-    });
-
-  /**
-   * A search hit and a recent card are two rows of different shapes over the
-   * same three facts, so one function launches both rather than each holding
-   * its own idea of what a document opens in.
-   */
-  type Entry = { readonly id: string; readonly name: string; readonly kind: ResourceKind };
-
-  /**
-   * What an entry opens. Where each kind goes is
-   * [`openingFor`](../../mock-capabilities/opening.ts)'s to answer, because this
-   * launcher is not the only surface that asks.
-   *
-   * Nothing means no category holds that kind, and saying so out loud is honest
-   * where a click that appears to do nothing is not.
-   */
-  const launch = (row: Entry) => {
-    const target = openingFor(row.kind, row.id);
-    if (target) view.open(target);
-    else alert(`Opening "${row.name}" is not wired up yet.`);
-  };
-
-  const start = (id: string) => {
-    chosen = id;
-    view.inspect("new-tab.start-from-template", { kind: "template", id });
-  };
+  const state = new LauncherState();
+  keepLauncherCurrent(state);
+  const resourceIndex = launcherResources();
+  const recent = $derived(recentsOf(resourceIndex.ready ? resourceIndex.current : undefined, state.now));
 </script>
 
 <ScreenSurface wide>
-  <div class="board">
-    <!--
-      First, because "open the thing I was working on" is a commoner errand than
-      "make a new one". One field over every kind in the project, capped at a
-      measure a person can read across in one movement.
-
-      `InputGroup` rather than `ScreenFilters`: that word is the row above a table
-      — a field pinned at 300px, an order and a matched-of-total — and this is a
-      launcher's one question, not a way of narrowing a list that is already here.
-    -->
-    <div class="area-search flex flex-col gap-2">
-      <InputGroup.Root class="h-10">
-        <InputGroup.Addon class="text-ink-muted">
-          <Search aria-hidden="true" />
-        </InputGroup.Addon>
-        <InputGroup.Input
-          type="search"
-          bind:value={query}
-          placeholder="Search {projectName}"
-          aria-label="Search this project"
-          class="text-body [&::-webkit-search-cancel-button]:hidden"
-        />
-      </InputGroup.Root>
-
-      <!--
-        Results drop under the field. Replacing the bands below would be a mode
-        change inside a tab whose whole job is one question, and the shelves being
-        pushed down is the cheaper of the two costs.
-      -->
-      {#if needle !== "" && results.length === 0}
-        <ScreenEmpty kind="no-matches" title="Nothing in the project matches" onclear={() => (query = "")}>
-          Search includes documents, presentations, spreadsheets, research threads, and findings.
-        </ScreenEmpty>
-      {:else if needle !== ""}
-        <div class="border-border-subtle rounded-panel flex flex-col overflow-hidden border">
-          {#each results as row (row.id)}
-            {@const Icon = KIND_ICON[row.kind]}
-            <button
-              type="button"
-              class="border-border-subtle hover:bg-surface-panel-hover flex items-center gap-2 border-b px-3 py-2 text-start last:border-b-0"
-              onclick={() => launch(row)}
+  <div class="launcher-board">
+    <div class="area-create">
+      <ScreenGroup label="Create">
+        <div class="create-actions" role="group" aria-label="What you can make">
+          {#each CREATE as choice (choice.key)}
+            {@const Icon = choice.icon}
+            <Button
+              variant="outline"
+              class="create-action {choice.tint}"
+              disabled={state.pending !== undefined}
+              onclick={() => void createResource(view, state, choice.key)}
             >
-              <span class="text-ink-muted flex shrink-0"><Icon size={14} aria-hidden="true" /></span>
-              <span class="text-body-sm text-ink-primary min-w-0 flex-1 truncate">{row.name}</span>
-              <span class="text-caption text-ink-muted shrink-0">{kindLabel(row.kind)}</span>
-              <span class="text-caption text-ink-muted shrink-0 tabular-nums">{row.updated}</span>
-            </button>
+              <Icon aria-hidden="true" />
+              {choice.label}
+            </Button>
           {/each}
         </div>
-      {/if}
+        {#if state.error}
+          <ScreenNote tone="gap">{state.error}</ScreenNote>
+        {/if}
+      </ScreenGroup>
     </div>
 
-    <!--
-      Three pills and nothing else. Overview, Analysis, Templates and Agents are
-      permanent tabs, and offering to create one would imply they can be absent;
-      a research thread is a tab like a document, but nothing in the model starts
-      one, so an offer to make one would be an offer nothing can keep.
-    -->
-    <div class="area-editors flex flex-wrap items-center justify-center gap-2">
-      {#each kinds as kind (kind.id)}
-        {@const Icon = EDITOR_ICON[kind.name]}
-        <Button
-          variant="outline"
-          size="lg"
-          title={kind.detail}
-          onclick={() => create(kind)}
-          disabled={kind.name !== "Spreadsheet" && creating !== undefined}
-          class="rounded-control text-body-sm px-4"
-        >
-          <Icon aria-hidden="true" />
-          {kind.name}
-        </Button>
-      {/each}
-    </div>
-    {#if creationError}
-      <ScreenNote tone="gap">Could not create the resource: {creationError}</ScreenNote>
-    {/if}
-
-    <!--
-      A shelf rather than a grid: a grid of twelve cards pushes the search field
-      off the top of the screen, and this is a row you browse rather than search.
-      This bounded shelf shows the represented resources changed most recently.
-      Open history does not have a represented source yet, so the UI says who
-      edited each row rather than claiming that the viewer opened it.
-    -->
     <div class="area-recent">
-      <ScreenGroup label="Recent" count={String(recent.length)}>
-        <ScreenShelf>
-          {#each recent as row (row.id)}
-            {@const Icon = KIND_ICON[row.kind]}
-            <ScreenShelfItem>
-              <ScreenCard
-                title={row.name}
-                sub="{kindLabel(row.kind)} · {row.updated}"
-                icon={Icon}
-                onselect={() => launch(row)}
-              >
-                {#snippet thumb()}
-                  <ScreenThumb ratio={KIND_RATIO[row.kind]} lines={4} />
-                {/snippet}
-                <span class="text-caption text-ink-muted truncate">
-                  Updated by {row.updatedBy}
-                </span>
-              </ScreenCard>
-            </ScreenShelfItem>
-          {/each}
-        </ScreenShelf>
+      <ScreenGroup label="Recent">
+        {#if resourceIndex.error}
+          <ScreenEmpty title="Recent resources could not be loaded" />
+        {:else if !resourceIndex.ready}
+          <ScreenEmpty title="Loading recent resources" />
+        {:else if recent.length === 0}
+          <ScreenEmpty title="Your recent work will appear here">
+            Create a resource to get started.
+          </ScreenEmpty>
+        {:else}
+          <ScreenShelf label="Recent resources">
+            {#each recent as row (row.id)}
+              <ScreenShelfItem width="13rem">
+                <div
+                  class="recent-card"
+                  title={row.name}
+                  ondblclick={() => launchResource(view, row)}
+                  onkeydown={(event) => {
+                    if (event.key !== "Enter") return;
+                    event.preventDefault();
+                    launchResource(view, row);
+                  }}
+                  role="presentation"
+                >
+                  <ScreenCard
+                    title={row.name}
+                    sub={RESOURCE_LABEL[row.kind]}
+                    icon={RESOURCE_ICON[row.kind]}
+                    selected={view.selection?.id === row.id}
+                    onselect={() => inspectResource(view, row)}
+                  >
+                    {#snippet thumb()}
+                      <span class="preview"><ScreenThumb ratio="4 / 3" lines={4} /></span>
+                    {/snippet}
+                    <span class="text-caption text-ink-muted truncate" title={"Updated " + row.updated}>
+                      Updated {row.updated}
+                    </span>
+                  </ScreenCard>
+                </div>
+              </ScreenShelfItem>
+            {/each}
+          </ScreenShelf>
+        {/if}
       </ScreenGroup>
     </div>
 
-    <!--
-      The same shelf, for starting from something. The variable count is on the
-      card because it is what decides whether the template can be taken at all.
-      The thumbnail's tinted bars are the openings the body leaves.
-    -->
-    <div class="area-templates">
-      <ScreenGroup label="Templates" count="{startable.length} of {all.length}">
-        <ScreenShelf>
-          {#each startable as row (row.id)}
-            {@const Icon = MAKES_ICON[row.makes]}
-            <ScreenShelfItem>
-              <ScreenCard
-                title={row.name}
-                sub={asks(row)}
-                icon={Icon}
-                selected={chosen === row.id}
-                onselect={() => start(row.id)}
-              >
-                {#snippet thumb()}
-                  <ScreenThumb
-                    ratio={MAKES_RATIO[row.makes]}
-                    lines={5}
-                    variables={Math.min(row.variables, 5)}
-                  />
-                {/snippet}
-                <span class="text-caption text-ink-muted truncate">
-                  {row.scope} · {row.updated}
-                </span>
-              </ScreenCard>
-            </ScreenShelfItem>
-          {/each}
-        </ScreenShelf>
-
-        <!--
-          The shelf offers things that cannot be taken, and says so rather than
-          letting a reader discover it at the Create button.
-        -->
-        <ScreenNote tone="gap" meta="{blocked} of {startable.length} ask for one">
-          No body entity can carry a variable key yet, so a supplied value has nowhere to go and
-          every template with variables is unusable until one can.
-        </ScreenNote>
-      </ScreenGroup>
+    <div class="area-resources">
+      <ProjectResources now={state.now} onopen={(row) => launchResource(view, row)} />
     </div>
   </div>
 </ScreenSurface>
 
 <style>
-  /**
-   * The layout table from the specification, as `grid-template-areas`. Its header
-   * row is one track — `1fr` — so the funnel is a single column at every width,
-   * and Recent and Templates each claim two of the six bands.
-   *
-   * There is no narrow fallback, because there is nothing for one to change: the
-   * board is already the single column a fallback would produce, in the order a
-   * fallback would put it — search, then the three editors, then what exists.
-   */
-  .board {
-    display: grid;
+  .launcher-board {
+    display: flex;
+    min-width: 0;
+    flex: 1;
+    flex-direction: column;
     gap: calc(var(--token-spacing-unit) * 6);
-    grid-template-columns: 1fr;
-    grid-template-areas:
-      "search"
-      "editors"
-      "recent"
-      "recent"
-      "templates"
-      "templates";
-    align-content: start;
   }
 
-  /* Centred and capped at about 640px: the field is wide, not the plane's width. */
-  .area-search {
-    grid-area: search;
-    justify-self: center;
+  .create-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: calc(var(--token-spacing-unit) * 2);
+  }
+
+  :global(.create-action) {
+    flex: 1 1 auto;
+    min-height: calc(var(--token-spacing-unit) * 10);
+    padding-inline: calc(var(--token-spacing-unit) * 3);
+  }
+
+  .recent-card > :global(button) {
     width: 100%;
-    max-width: calc(var(--token-spacing-unit) * 160);
+    box-shadow: var(--token-shadow-raised);
   }
 
-  .area-editors {
-    grid-area: editors;
-    justify-self: center;
+  .preview {
+    display: flex;
+    height: calc(var(--token-spacing-unit) * 20);
+    align-items: center;
+    justify-content: center;
   }
 
-  .area-recent {
-    grid-area: recent;
-    min-width: 0;
+  .preview > :global(*) {
+    height: 100%;
+    width: auto;
+    flex: none;
   }
 
-  .area-templates {
-    grid-area: templates;
-    min-width: 0;
+  .area-resources {
+    display: flex;
+    min-height: calc(var(--token-spacing-unit) * 72);
+    flex: 1;
+    flex-direction: column;
   }
 </style>

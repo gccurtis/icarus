@@ -1,6 +1,4 @@
 <script lang="ts">
-  import ArrowDownNarrowWide from "@lucide/svelte/icons/arrow-down-narrow-wide";
-  import ArrowUpNarrowWide from "@lucide/svelte/icons/arrow-up-narrow-wide";
   import ChartColumn from "@lucide/svelte/icons/chart-column";
   import FileText from "@lucide/svelte/icons/file-text";
   import FlaskConical from "@lucide/svelte/icons/flask-conical";
@@ -9,29 +7,22 @@
 
   import { PanelFaces } from "$authored-components/panel";
   import {
-    ScreenCell,
     ScreenEmpty,
-    ScreenFilters,
     ScreenGroup,
     ScreenHeader,
     ScreenItem,
     ScreenList,
     ScreenNote,
-    ScreenRow,
-    ScreenSurface,
-    ScreenTable
+    ScreenSurface
   } from "$authored-components/screen";
-  import { Button } from "$vendored-components/button";
   import * as DropdownMenu from "$vendored-components/dropdown-menu";
   import { ToggleGroup, ToggleGroupItem } from "$vendored-components/toggle-group";
   import { actorName } from "$app-views/categories/project-overview/procedures/actor-name";
   import { activity } from "$app-views/categories/project-overview/procedures/activity";
   import { OverviewState } from "$app-views/categories/project-overview/content/overview.state.svelte";
   import { keepBoardCurrent } from "$app-views/categories/project-overview/procedures/effects/board.svelte";
-  import { inspectionFor } from "$app-views/categories/project-overview/procedures/inspecting";
   import { makeResource } from "$app-views/categories/project-overview/procedures/make-resource";
   import { mentions as mentionsForViewer } from "$app-views/categories/project-overview/procedures/mentions";
-  import { openingFor } from "$app-views/categories/project-overview/procedures/opening";
   import { people } from "$app-views/categories/project-overview/procedures/people";
   import { project } from "$app-views/categories/project-overview/procedures/project";
   import { boardHistory } from "$app-views/categories/project-overview/procedures/read-board-history";
@@ -39,11 +30,7 @@
   import { projectOverview } from "$app-views/categories/project-overview/procedures/read-overview";
   import { projectResources } from "$app-views/categories/project-overview/procedures/read-resources";
   import { projectId, viewerId } from "$app-views/categories/project-overview/procedures/scope";
-  import {
-    resourcesIn,
-    type Resource,
-    type ResourceKind
-  } from "$app-views/categories/project-overview/procedures/resources";
+  import ProjectResources from "$app-views/categories/project-overview/components/project-resources.svelte";
   import { workspaceState } from "$model/client/workspace-state";
 
   const view = workspaceState();
@@ -102,44 +89,6 @@
   const everyone = $derived(people(id, overview));
   const mentions = $derived(mentionsForViewer(viewer, clock.now, comments, resources));
   const events = $derived(activity(clock.now, history));
-  const work = $derived(
-    resourcesIn(resources, clock.now)
-  );
-
-  const SORTS = [
-    { value: "updated", label: "Updated" },
-    { value: "name", label: "Name" },
-    { value: "kind", label: "Kind" }
-  ] as const;
-
-  /**
-   * What a kind is called in the table, and in the filter that narrows to it.
-   *
-   * Total rather than partial, both of them: a kind added to the vocabulary
-   * without a name here is a build error rather than a blank cell and an option
-   * nobody can read.
-   */
-  const KIND_LABEL: Record<ResourceKind, string> = {
-    document: "Document",
-    presentation: "Presentation",
-    spreadsheet: "Spreadsheet",
-    research: "Research",
-    analysis: "Analysis",
-    file: "External",
-    finding: "Finding"
-  };
-
-  const KIND_PLURAL: Record<ResourceKind, string> = {
-    document: "Documents",
-    presentation: "Presentations",
-    spreadsheet: "Spreadsheets",
-    research: "Research",
-    analysis: "Analyses",
-    file: "External",
-    finding: "Findings"
-  };
-
-  const WITHOUT_FILES = "all-but-file";
 
   const CREATE = [
     {
@@ -197,75 +146,6 @@
     alert("Creating a represented analysis graph is not wired up yet.");
   };
 
-  const launch = (row: Resource) => {
-    const target = openingFor(row);
-    if (target) {
-      view.open(target);
-      if (row.kind === "file") {
-        view.inspect("external.file", { kind: "external-file", id: row.id });
-      }
-      return;
-    }
-
-    if (["research", "analysis"].includes(row.kind)) {
-      alert(`Opening "${row.name}" is not wired up yet.`);
-      return;
-    }
-    const { key, selection } = inspectionFor(row);
-    view.inspect(key, selection);
-  };
-
-  const compare = (a: Resource, b: Resource): number => {
-    if (board.sortBy === "name") return a.name.localeCompare(b.name);
-    if (board.sortBy === "kind")
-      return (
-        KIND_LABEL[a.kind].localeCompare(KIND_LABEL[b.kind]) || a.name.localeCompare(b.name)
-      );
-    return b.updatedAt - a.updatedAt;
-  };
-
-  const DIRECTION: Record<string, { asc: string; desc: string }> = {
-    updated: { asc: "Newest first", desc: "Oldest first" },
-    name: { asc: "A to Z", desc: "Z to A" },
-    kind: { asc: "A to Z", desc: "Z to A" }
-  };
-
-  const ofKind = (of: ResourceKind): boolean =>
-    board.kind === "all" || (board.kind === WITHOUT_FILES ? of !== "file" : of === board.kind);
-
-  const matched = $derived(
-    work
-      .filter((row) => ofKind(row.kind))
-      .filter((row) => board.actor === "all" || row.updatedBy === board.actor)
-      .filter((row) => row.name.toLowerCase().includes(board.search.trim().toLowerCase()))
-  );
-
-  const ordered = $derived(
-    [...matched].sort((a, b) => (board.direction === "asc" ? 1 : -1) * compare(a, b))
-  );
-
-  const listed = $derived(
-    ordered.map((row) => ({ row, ...inspectionFor(row) }))
-  );
-
-  /**
-   * Both filters offer what the work contains rather than what the vocabulary
-   * allows, for the same reason. The kind list and the actor list are derived from
-   * the rows already in the project, so they stay in step with what is on the
-   * board and never widen past the table they are narrowing. The visible task label
-   * uses the driving persona name and task id (for example, Generalist (e344csd))
-   * rather than a generic agent label.
-   */
-  const kinds = $derived(
-    [...new Set(work.map((row) => row.kind))].sort((a, b) =>
-      KIND_PLURAL[a].localeCompare(KIND_PLURAL[b])
-    )
-  );
-
-  const actors = $derived(
-    [...new Set(work.map((row) => row.updatedBy))].sort((a, b) => a.localeCompare(b))
-  );
-
   /**
    * Everyone in the project, those who are here now first.
    *
@@ -283,12 +163,6 @@
         present: person.at !== undefined
       }))
   );
-
-  const clear = () => {
-    board.search = "";
-    board.kind = "all";
-    board.actor = "all";
-  };
 </script>
 
 <ScreenSurface wide>
@@ -449,129 +323,12 @@
       the whole answer rather than the part that fitted.
     -->
     <div class="area-resources">
-      <ScreenGroup label="Resources" fill>
-        <!--
-          The count is matched-of-total, so a filtered view never looks like the
-          whole project. The direction rides in `order`, which draws it inside the
-          order's own frame: which way a sort runs is half of one decision.
-        -->
-        <ScreenFilters
-          placeholder="Search this project"
-          matched={matched.length}
-          total={work.length}
-          sorts={SORTS}
-          bind:sort={board.sortBy}
-          bind:value={board.search}
-        >
-          <select
-            class="border-border-subtle bg-surface-panel text-caption rounded-control border px-2 py-1"
-            bind:value={board.kind}
-            aria-label="Kind"
-          >
-            <option value="all">All kinds</option>
-            {#if kinds.includes("file")}
-              <option value={WITHOUT_FILES}>Less external</option>
-            {/if}
-            {#each kinds as option (option)}
-              <option value={option}>{KIND_PLURAL[option]}</option>
-            {/each}
-          </select>
-          <select
-            class="border-border-subtle bg-surface-panel text-caption rounded-control border px-2 py-1"
-            bind:value={board.actor}
-            aria-label="Updated by"
-          >
-            <option value="all">Anyone</option>
-            {#each actors as name (name)}
-              <option value={name}>{name}</option>
-            {/each}
-          </select>
-
-          {#snippet order()}
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              aria-label={DIRECTION[board.sortBy][board.direction]}
-              title={DIRECTION[board.sortBy][board.direction]}
-              onclick={() => (board.direction = board.direction === "asc" ? "desc" : "asc")}
-            >
-              {#if board.direction === "asc"}
-                <ArrowUpNarrowWide aria-hidden="true" />
-              {:else}
-                <ArrowDownNarrowWide aria-hidden="true" />
-              {/if}
-            </Button>
-          {/snippet}
-        </ScreenFilters>
-
-        {#if resourceIndex.ready && resourceIndex.current.unavailable.length > 0}
-          <ScreenNote tone="gap">
-            {resourceIndex.current.unavailable.length} represented
-            {resourceIndex.current.unavailable.length === 1 ? "resource is" : "resources are"}
-            hidden because stored metadata is invalid.
-          </ScreenNote>
-        {/if}
-
-        {#if resourceIndex.error}
-          <div class="resource-state">
-            <ScreenEmpty title="Project resources could not be loaded">
-              The represented resource index returned an error. Retry without treating the project as empty.
-            </ScreenEmpty>
-            <Button variant="outline" size="sm" onclick={() => resourceIndex.refresh()}>
-              Retry resource index
-            </Button>
-          </div>
-        {:else if !resourceIndex.ready}
-          <ScreenEmpty title="Loading project resources">
-            Reading the project-scoped resource index.
-          </ScreenEmpty>
-        {:else if listed.length === 0}
-          <ScreenEmpty kind="no-matches" title="Nothing in this project matches" onclear={clear}>
-            Search covers represented documents, presentations, spreadsheets, research, and findings.
-          </ScreenEmpty>
-        {:else}
-          <ScreenTable scroll columns={["Name", "Kind", "Updated", "Updated by"]}>
-            {#each listed as entry (entry.row.id)}
-              <ScreenRow
-                selected={view.selection?.id === entry.selection.id}
-                onselect={() => view.inspect(entry.key, entry.selection)}
-                onopen={() => launch(entry.row)}
-              >
-                <ScreenCell>
-                  <button
-                    type="button"
-                    class="text-body-sm text-ink-primary min-h-9 text-start hover:underline"
-                    onclick={() => view.inspect(entry.key, entry.selection)}
-                    ondblclick={() => launch(entry.row)}
-                    onkeydown={(event) => {
-                      if (event.key !== "Enter") return;
-                      event.preventDefault();
-                      launch(entry.row);
-                    }}
-                  >
-                    {entry.row.name}
-                  </button>
-                </ScreenCell>
-                <ScreenCell>{KIND_LABEL[entry.row.kind]}</ScreenCell>
-                <ScreenCell num>{entry.row.updated}</ScreenCell>
-                <ScreenCell>{entry.row.updatedBy}</ScreenCell>
-              </ScreenRow>
-            {/each}
-          </ScreenTable>
-        {/if}
-      </ScreenGroup>
+      <ProjectResources now={clock.now} />
     </div>
   </div>
 </ScreenSurface>
 
 <style>
-  .resource-state {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: calc(var(--token-spacing-unit) * 2);
-  }
-
   /**
    * Two tracks in the middle band, 2fr and 3fr, and full width above and below.
    *

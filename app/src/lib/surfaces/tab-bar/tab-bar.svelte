@@ -58,7 +58,7 @@
     aria-current={here === "project-overview" ? "page" : undefined}
     title="Overview"
     aria-label="Overview"
-    onclick={() => view.open({ category: "project-overview" })}
+    onclick={() => view.activate("project-overview")}
   >
     <House size={15} aria-hidden="true" />
   </button>
@@ -70,7 +70,7 @@
     aria-current={here === "agents" ? "page" : undefined}
     title="Agents"
     aria-label="Agents"
-    onclick={() => view.open({ category: "agents" })}
+    onclick={() => view.activate("agents")}
   >
     <Bot size={15} aria-hidden="true" />
   </button>
@@ -82,7 +82,7 @@
     aria-current={here === "templates" ? "page" : undefined}
     title="Templates"
     aria-label="Templates"
-    onclick={() => view.open({ category: "templates" })}
+    onclick={() => view.activate("templates")}
   >
     <LayoutTemplate size={15} aria-hidden="true" />
   </button>
@@ -94,7 +94,7 @@
     aria-current={here === "external" ? "page" : undefined}
     title="External"
     aria-label="External"
-    onclick={() => view.open({ category: "external" })}
+    onclick={() => view.activate("external")}
   >
     <FolderOpen size={15} aria-hidden="true" />
   </button>

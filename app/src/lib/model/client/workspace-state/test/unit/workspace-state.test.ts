@@ -4,6 +4,8 @@ import { createConfiguration } from "$model/client/configuration";
 import { createTabList } from "$model/client/tab-list";
 import { createTabViews } from "$model/client/tab-views";
 import { createWorkspaceState } from "$model/client/workspace-state";
+import { WorkspaceStateData } from "$model/client/workspace-state/definition.svelte";
+import { open as openInWorkspace } from "$model/client/workspace-state/methods/open";
 import type {
   Inspected,
   Selection,
@@ -259,6 +261,103 @@ test("the launcher never dedupes — open five, get five", () => {
   for (let i = 0; i < 5; i += 1) model.open(launcher);
 
   assert.equal(model.tabs.length, SINGLETONS.length + 5);
+});
+
+test("opening a resource consumes only the active launcher and activates the resource", () => {
+  const model = workspaceState();
+  const existingDocument = model.open(document("existing"));
+  const otherLauncher = model.open(launcher);
+  const origin = model.open(launcher);
+
+  const opened = model.open(document("made"));
+
+  assert.equal(model.activeId, opened.id);
+  assert.deepEqual(
+    model.tabs.filter((tab) => !isSingleton(tab.category)).map((tab) => tab.id),
+    [existingDocument.id, otherLauncher.id, opened.id]
+  );
+  assert.equal(model.tabs.some((tab) => tab.id === origin.id), false);
+});
+
+test("a launcher opening an existing resource preserves its state and applies the requested focus", () => {
+  const model = workspaceState();
+  const existing = model.open(document("k57"));
+  const context = railFor("document-editor")[1];
+  model.selectContext(context);
+  model.inspect(lens, selection);
+  const otherLauncher = model.open(launcher);
+  const origin = model.open(launcher);
+
+  const opened = model.open({ ...document("k57"), focus: "paragraph-2" });
+
+  assert.equal(opened.id, existing.id);
+  assert.equal(model.activeId, existing.id);
+  assert.equal(model.active.focus, "paragraph-2");
+  assert.equal(model.context, context);
+  assert.equal(model.inspected, lens);
+  assert.deepEqual(model.selection, selection);
+  assert.equal(model.tabs.filter((tab) => tab.resourceId === "k57").length, 1);
+  assert.deepEqual(
+    model.tabs.filter((tab) => tab.category === "new-tab").map((tab) => tab.id),
+    [otherLauncher.id]
+  );
+  assert.equal(model.tabs.some((tab) => tab.id === origin.id), false);
+});
+
+test("opening from another tab leaves inactive launchers open", () => {
+  const model = workspaceState();
+  const first = model.open(launcher);
+  const second = model.open(launcher);
+  model.activate("project-overview");
+
+  const opened = model.open(document("k57"));
+
+  assert.equal(model.activeId, opened.id);
+  assert.deepEqual(
+    model.tabs.filter((tab) => tab.category === "new-tab").map((tab) => tab.id),
+    [first.id, second.id]
+  );
+});
+
+test("a launcher shortcut to Templates consumes its source and focuses the library", () => {
+  const model = workspaceState();
+  const origin = model.open(launcher);
+
+  const opened = model.open({ category: "templates", content: "templates.library" });
+
+  assert.equal(opened.id, "templates");
+  assert.equal(model.activeId, "templates");
+  assert.equal(model.active.content, "templates.library");
+  assert.equal(model.tabs.some((tab) => tab.id === origin.id), false);
+  assert.equal(model.tabs.length, SINGLETONS.length);
+});
+
+test("consuming a launcher queues its close after the destination open and activation", () => {
+  const state = new WorkspaceStateData(
+    "p1",
+    createTabList(),
+    createTabViews(),
+    { afterOps: 100, afterMs: 60_000 },
+    undefined,
+    undefined,
+    undefined
+  );
+
+  try {
+    const origin = openInWorkspace(state, launcher);
+    const before = state.buffer.length;
+    const opened = openInWorkspace(state, document("k57"));
+    const queued = state.buffer.slice(before);
+
+    assert.deepEqual(queued.map((op) => op.op), ["open", "activate", "close"]);
+    assert.equal(queued[0].op === "open" && queued[0].tab, opened.id);
+    assert.deepEqual(queued[1], { op: "activate", was: origin.id, now: opened.id });
+    assert.equal(queued[2].op === "close" && queued[2].tab, origin.id);
+    assert.deepEqual(state.log.slice(before), queued);
+    assert.equal(state.tabs.activeId, opened.id);
+  } finally {
+    state.clearTimer();
+  }
 });
 
 test("opening an already-open permanent tab onto a centre moves it, keeps the rail and drops the stale inspection", () => {

@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
+  isStoredWorkspaceOp,
   isStoredWorkspaceRevision,
   isStoredWorkspaceSnapshot
 } from "$representation/data/behavior/workspace/stored-rows";
 import { startingWorkspace } from "$representation/data/behavior/workspace/starting";
+import { openingView } from "$representation/data/behavior/workspace/opening";
 
 const frame = {
   contextWidth: 180,
@@ -57,7 +59,65 @@ const revision = () => ({
   at: 2
 });
 
+const selectedLauncher = (inspected: string, selection: { kind: string; id: string }) => {
+  const initial = startingWorkspace();
+  return {
+    ...snapshot(),
+    tabs: [...initial.tabs, { id: "launcher", category: "new-tab" }],
+    activeId: "launcher",
+    views: {
+      ...initial.views,
+      launcher: { ...openingView("new-tab"), inspected, selection }
+    }
+  };
+};
+
 describe("current workspace storage", () => {
+  it.each([
+    ["project-overview.resource", { kind: "document", id: "documents:one" }],
+    ["project-overview.file", { kind: "file", id: "externalFiles:one" }],
+    ["project-overview.connector", { kind: "connector", id: "connectors:one" }],
+    ["agents.task", { kind: "task", id: "agentTasks:one" }]
+  ] as const)("admits New Tab's %s inspection in snapshots and open/close logs", (inspected, selection) => {
+    const selected = selectedLauncher(inspected, selection);
+    expect(isStoredWorkspaceSnapshot(selected)).toBe(true);
+    const ops = ["open", "close"].map((op) => ({
+      op,
+      tab: "launcher",
+      at: startingWorkspace().tabs.length,
+      target: { category: "new-tab" },
+      view: selected.views.launcher
+    }));
+    for (const op of ops) expect(isStoredWorkspaceOp(op)).toBe(true);
+    expect(isStoredWorkspaceRevision({ ...revision(), ops })).toBe(true);
+
+    // The same resource-table lens is not newly admitted on unrelated categories.
+    expect(isStoredWorkspaceOp({
+      ...ops[0],
+      target: { category: "document-editor", resourceId: "documents:one" },
+      view: { ...openingView("document-editor"), inspected, selection }
+    })).toBe(false);
+  });
+
+  it.each([
+    "templates.template",
+    "document-editor.text-block",
+    "project-overview.comment",
+    "agents.persona"
+  ])("still rejects unrelated %s inspection on New Tab", (inspected) => {
+    const selected = selectedLauncher(inspected, { kind: "resource", id: "documents:one" });
+    expect(isStoredWorkspaceSnapshot(selected)).toBe(false);
+    for (const op of ["open", "close"]) {
+      expect(isStoredWorkspaceOp({
+        op,
+        tab: "launcher",
+        at: startingWorkspace().tabs.length,
+        target: { category: "new-tab" },
+        view: selected.views.launcher
+      })).toBe(false);
+    }
+  });
+
   it("admits exact snapshots and operation logs", () => {
     expect(isStoredWorkspaceSnapshot(snapshot())).toBe(true);
     expect(isStoredWorkspaceRevision(revision())).toBe(true);

@@ -318,18 +318,6 @@
       "checker": "component-effects-have-a-home",
       "contract": "BEH-02",
       "pillar": "procedural-transparency",
-      "path": "src/lib/app-views/categories/new-tab/content/launcher.svelte",
-      "fingerprint": "onMount",
-      "finding": "ARCH-05",
-      "owner": "architecture-remediation",
-      "rationale": "Pre-existing structural debt captured when this checker became blocking",
-      "removal": "Remove when component-effects-have-a-home reports clean for this structure",
-      "review": "2027-03-01"
-    },
-    {
-      "checker": "component-effects-have-a-home",
-      "contract": "BEH-02",
-      "pillar": "procedural-transparency",
       "path": "src/lib/app-views/categories/presentation-editor/components/arrange-section.svelte",
       "fingerprint": "$effect",
       "finding": "ARCH-05",
@@ -1796,18 +1784,6 @@
       "review": "2027-03-01"
     },
     {
-      "checker": "production-svelte-imports-no-capability",
-      "contract": "BEH-01",
-      "pillar": "procedural-transparency",
-      "path": "src/lib/app-views/categories/new-tab/content/launcher.svelte",
-      "fingerprint": "$capabilities/project-resources/index.remote",
-      "finding": "ARCH-09",
-      "owner": "architecture-remediation",
-      "rationale": "Pre-existing structural debt captured when this checker became blocking",
-      "removal": "Remove when production-svelte-imports-no-capability reports clean for this structure",
-      "review": "2027-03-01"
-    },
-    {
       "checker": "production-views-have-no-fixture-repositories",
       "contract": "DATA-01",
       "pillar": "authoritative-data",
@@ -1862,19 +1838,6 @@
       "path": "src/lib/app-views/categories/analysis/content/chart.svelte",
       "subject": "state-is-classified",
       "fingerprint": "aggregationPicked,compact,conditions,dataPicked,directionPicked,figures,option,picked,replacements,sideways,sortPicked,stage,xPicked,yPicked",
-      "finding": "ARCH-06",
-      "owner": "architecture-remediation",
-      "rationale": "Pre-existing structural debt captured when this checker became blocking",
-      "removal": "Remove when remounted-views-hold-no-declared-tab-state reports clean for this structure",
-      "review": "2027-03-01"
-    },
-    {
-      "checker": "remounted-views-hold-no-declared-tab-state",
-      "contract": "OWN-03",
-      "pillar": "state-ownership",
-      "path": "src/lib/app-views/categories/new-tab/content/launcher.svelte",
-      "subject": "state-is-classified",
-      "fingerprint": "chosen,creating,creationError,now,query",
       "finding": "ARCH-06",
       "owner": "architecture-remediation",
       "rationale": "Pre-existing structural debt captured when this checker became blocking",

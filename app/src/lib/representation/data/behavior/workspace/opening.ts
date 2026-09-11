@@ -69,8 +69,8 @@ export const OPENING: Record<Category, Opening> = {
 
   "new-tab": {
     content: "new-tab.launcher",
-    context: "new-tab.create",
-    rail: ["new-tab.create", "new-tab.recent", "new-tab.templates", "new-tab.bring-in"]
+    context: "new-tab.templates",
+    rail: ["new-tab.templates"]
   },
 
   "presentation-editor": {

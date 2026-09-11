@@ -1,5 +1,6 @@
 import type { Target } from "$representation/data/types/workspace/tab";
 import type { WorkspaceStateData } from "$model/client/workspace-state/definition.svelte";
+import { close } from "$model/client/workspace-state/methods/close";
 import { landOn } from "$model/client/workspace-state/methods/shared/land-on";
 import { landing } from "$model/client/workspace-state/methods/shared/landing";
 import { mintView } from "$model/client/workspace-state/methods/shared/mint-view";
@@ -9,6 +10,10 @@ import { targetKey } from "$model/client/workspace-state/methods/shared/target-k
 import type { Tab } from "$model/client/workspace-state/types";
 
 export const open = (state: WorkspaceStateData, target: Target): Tab => {
+  const launcherId =
+    state.tabs.active.category === "new-tab" && target.category !== "new-tab"
+      ? state.tabs.activeId
+      : undefined;
   const key = targetKey(target);
   const existing =
     key === undefined ? undefined : state.tabs.tabs.find((record) => targetKey(record) === key);
@@ -34,6 +39,7 @@ export const open = (state: WorkspaceStateData, target: Target): Tab => {
       perform(state, { op: "context", tab: existing.id, was: held.contextId, now: target.context });
     }
 
+    if (launcherId !== undefined) close(state, launcherId);
     return state.compose(existing.id);
   }
 
@@ -52,5 +58,6 @@ export const open = (state: WorkspaceStateData, target: Target): Tab => {
   });
   perform(state, { op: "activate", was, now: record.id });
 
+  if (launcherId !== undefined) close(state, launcherId);
   return state.compose(record.id);
 };

@@ -21,11 +21,7 @@
     ProjectPanelActor,
     ProjectResourceKind
   } from "$capabilities/project/index.remote";
-  import {
-    isContextView,
-    isInspectorView,
-    workspaceState
-  } from "$model/client/workspace-state";
+  import { workspaceState } from "$model/client/workspace-state";
   import { activityLabel } from "$app-views/categories/project-overview/procedures/activity-label";
   import { ticksTheClock } from "$app-views/categories/project-overview/procedures/effects/ticks-the-clock.svelte";
   import { projectResource } from "$app-views/categories/project-overview/procedures/read-resource";
@@ -64,11 +60,6 @@
       hour: "numeric",
       minute: "2-digit"
     });
-
-  const navigate = (key: string) => {
-    if (isContextView(key)) view.selectContext(key);
-    else if (isInspectorView(key)) view.inspect(key);
-  };
 
   const inspectActor = (actor: ProjectPanelActor) => {
     if (actor.id === undefined) return;
@@ -113,7 +104,7 @@
         { label: "Resources", key: "project-overview.resources" },
         { label: resource === null || resource === undefined ? "Resource" : KIND_LABEL[resource.kind] }
       ]}
-      onnavigate={navigate}
+      onnavigate={() => view.clear()}
     />
   {/snippet}
 
