@@ -2,9 +2,12 @@ import { getContext, setContext } from "svelte";
 
 export type Picker = { readonly insert: (address: string, anchor: string, gesture: number) => void };
 
-export type Draft = { readonly at: string; readonly text: string };
+export type Draft = { readonly at: string; readonly targets: readonly string[]; readonly text: string };
 
-export type Writing = { readonly seed: string; readonly at: number };
+export type Writer = {
+  readonly begin: (seed: string) => void;
+  readonly commit: () => void;
+};
 
 export type PickingChannel = {
   readonly arm: (picker: Picker) => void;
@@ -15,8 +18,9 @@ export type PickingChannel = {
   readonly drafting: (next: Draft | undefined) => void;
   readonly drafted: Draft | undefined;
   readonly beginWriting: (seed: string) => void;
-  readonly begun: Writing | undefined;
-  readonly writingTaken: () => void;
+  readonly writeWith: (writer: Writer) => void;
+  readonly stopWritingWith: (writer: Writer) => void;
+  readonly commitWriting: () => void;
   readonly endWriting: () => void;
   readonly ended: number | undefined;
   readonly endingTaken: () => void;
@@ -37,11 +41,11 @@ export type PickingChannel = {
  */
 export const createPickingChannel = (): PickingChannel => {
   let picker: Picker | undefined = undefined;
+  let writer: Writer | undefined;
   let armed = $state(false);
   let session = $state(0);
   let nextSession = 0;
   let draft = $state<Draft | undefined>(undefined);
-  let opening = $state<Writing | undefined>(undefined);
   let closing = $state<number | undefined>(undefined);
 
   return {
@@ -75,16 +79,16 @@ export const createPickingChannel = (): PickingChannel => {
       return draft;
     },
     beginWriting: (seed) => {
-      opening = {
-        seed: `${opening?.seed ?? ""}${seed}`,
-        at: (opening?.at ?? 0) + 1
-      };
+      writer?.begin(seed);
     },
-    get begun(): Writing | undefined {
-      return opening;
+    writeWith: (next) => {
+      writer = next;
     },
-    writingTaken: () => {
-      opening = undefined;
+    stopWritingWith: (next) => {
+      if (writer === next) writer = undefined;
+    },
+    commitWriting: () => {
+      writer?.commit();
     },
     endWriting: () => {
       closing = (closing ?? 0) + 1;

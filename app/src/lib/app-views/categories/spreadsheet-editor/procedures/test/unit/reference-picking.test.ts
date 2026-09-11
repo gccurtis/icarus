@@ -8,6 +8,14 @@ import {
 } from "$app-views/categories/spreadsheet-editor/procedures/reference-picking";
 
 describe("references picked while writing a formula", () => {
+  it.each(["=SUM(A1:A3)", "  =SUM(A1:A3)"])("keeps the formula marker when replacing all of %s", (text) => {
+    const first = insertedReference(text, "B2", "r2/c2", 1, { from: 0, to: text.length });
+    const range = insertedReference(first.text, "B2:D4", "r2/c2", 1, { from: first.caret, to: first.caret }, first.span);
+    expect(range.text).toBe(`${text.slice(0, text.indexOf("=") + 1)}B2:D4`);
+    expect(range.span.from).toBe(text.indexOf("=") + 1);
+    expect(range.caret).toBe(range.text.length);
+  });
+
   it("grows one span from its first cell instead of appending each pointer update", () => {
     const first = insertedReference("=SUM(", "E22", "r22/c5", 1, { from: 5, to: 5 });
     const across = insertedReference(first.text, "E22:F22", "r22/c5", 1, { from: first.caret, to: first.caret }, first.span);

@@ -1,18 +1,20 @@
-import type { PickingChannel, Picker } from "$app-views/categories/spreadsheet-editor/procedures/picking.svelte";
+import type { PickingChannel, Picker, Writer } from "$app-views/categories/spreadsheet-editor/procedures/picking.svelte";
 
 export type WritingSession = {
   readonly channel: PickingChannel;
   readonly picker: Picker;
   readonly picking: () => boolean;
   readonly address: () => string | undefined;
+  readonly targets: () => readonly string[];
   readonly draft: () => string;
   readonly selected: () => unknown;
-  readonly abandon: () => void;
+  readonly commit: () => void;
+  readonly cancel: () => void;
   readonly begin: (seed: string) => void;
 };
 
 /**
- * One cell being written, wherever the field showing it happens to be.
+ * One captured selection being written, wherever the field showing it happens to be.
  *
  * Four arrangements hold at once while somebody types: the session ends when
  * the selection moves, the grid is armed to answer a click with a reference,
@@ -25,7 +27,7 @@ export const runsTheWritingSession = (session: WritingSession): void => {
 
   $effect(() => {
     session.selected();
-    session.abandon();
+    session.cancel();
   });
 
   $effect(() => {
@@ -36,15 +38,16 @@ export const runsTheWritingSession = (session: WritingSession): void => {
 
   $effect(() => {
     const at = session.address();
-    channel.drafting(at === undefined ? undefined : { at, text: session.draft() });
+    channel.drafting(at === undefined ? undefined : { at, targets: session.targets(), text: session.draft() });
     return () => channel.drafting(undefined);
   });
 
   $effect(() => {
-    const wanted = channel.begun;
-    if (wanted === undefined) return;
-
-    channel.writingTaken();
-    session.begin(wanted.seed);
+    const writer: Writer = { begin: session.begin, commit: session.commit };
+    channel.writeWith(writer);
+    return () => {
+      session.cancel();
+      channel.stopWritingWith(writer);
+    };
   });
 };

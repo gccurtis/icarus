@@ -2,174 +2,60 @@
   import { Input } from "$vendored-components/input";
   import { cn } from "$vendored-components/utils";
   import { CellHeadState } from "$app-views/categories/spreadsheet-editor/components/cell-head.state.svelte";
-  import { gridOf, keyOf } from "$app-views/categories/spreadsheet-editor/procedures/addresses";
-  import {
-    anchorLabel,
-    anchored,
-    lockedAt,
-    referenceAt
-  } from "$app-views/categories/spreadsheet-editor/procedures/anchoring";
-  import { cellAt, typed } from "$app-views/categories/spreadsheet-editor/procedures/cells";
-  import { editableOf, factsOf, recalculating } from "$app-views/categories/spreadsheet-editor/procedures/recalculation";
-  import { pickingChannel, type Picker } from "$app-views/categories/spreadsheet-editor/procedures/picking.svelte";
-  import { insertedReference } from "$app-views/categories/spreadsheet-editor/procedures/reference-picking";
+  import { keyOf } from "$app-views/categories/spreadsheet-editor/procedures/addresses";
+  import { anchorLabel, referenceAt } from "$app-views/categories/spreadsheet-editor/procedures/anchoring";
+  import { cellAt } from "$app-views/categories/spreadsheet-editor/procedures/cells";
+  import { createCellReferenceActions } from "$app-views/categories/spreadsheet-editor/procedures/cell-reference-actions";
+  import { createCellWritingActions } from "$app-views/categories/spreadsheet-editor/procedures/cell-writing-actions";
+  import { editableOf, factsOf } from "$app-views/categories/spreadsheet-editor/procedures/recalculation";
+  import { pickingChannel } from "$app-views/categories/spreadsheet-editor/procedures/picking.svelte";
   import { variableRegister } from "$app-views/categories/spreadsheet-editor/procedures/variables.svelte";
-  import { selectedRef } from "$app-views/categories/spreadsheet-editor/procedures/selection-reading";
-  import { continueWritingHandoff } from "$app-views/categories/spreadsheet-editor/procedures/writing-handoff";
+  import { writingAnchor } from "$app-views/categories/spreadsheet-editor/procedures/typing-selection";
   import { holdsTheRuntime } from "$app-views/categories/spreadsheet-editor/procedures/effects/holds-the-runtime.svelte";
   import { runsTheWritingSession } from "$app-views/categories/spreadsheet-editor/procedures/effects/runs-the-writing-session.svelte";
   import { workspaceState } from "$model/client/workspace-state";
 
   const LOCKS = [
-    { label: "free", column: false, row: false, hint: "Both halves move when this formula is copied" },
-    { label: "both", column: true, row: true, hint: "Neither half moves" },
-    { label: "row", column: false, row: true, hint: "The row is held still" },
-    { label: "column", column: true, row: false, hint: "The column is held still" }
+    { label: "free", column: false, row: false, hint: "Rows and columns move when copied" },
+    { label: "both", column: true, row: true, hint: "Lock rows and columns at both ends of a range" },
+    { label: "row", column: false, row: true, hint: "Lock rows at both ends of a range" },
+    { label: "column", column: true, row: false, hint: "Lock columns at both ends of a range" }
   ];
 
   const view = workspaceState();
   const channel = pickingChannel();
   const register = variableRegister();
-
   const sheetId = view.active.resourceId;
-
   const attached = holdsTheRuntime();
   const runtime = $derived(attached.current);
-
   const sheet = $derived(runtime?.sheet);
   const facts = $derived(factsOf(sheetId, sheet));
-  const ref = $derived(selectedRef(view.selection));
+  const ref = $derived(writingAnchor(view.selection));
   const held = $derived(sheet === undefined || ref === undefined ? undefined : cellAt(sheet, ref));
   const shown = $derived(editableOf(facts, held));
   const expression = $derived(held?.expression !== undefined);
-
   const state = new CellHeadState();
-
-  const picker: Picker = {
-    insert: (address, anchor, gesture) => {
-      const input = state.field;
-      if (input === null) return;
-      const from = input.selectionStart ?? state.draft.length;
-      const insertion = insertedReference(
-        state.draft,
-        address,
-        anchor,
-        gesture,
-        { from, to: input.selectionEnd ?? from },
-        state.span
-      );
-      state.draft = insertion.text;
-      state.span = insertion.span;
-      setTimeout(() => {
-        input.focus();
-        input.setSelectionRange(insertion.caret, insertion.caret);
-      }, 0);
-    }
-  };
-
   const formula = (text: string) => text.trimStart().startsWith("=");
-
   const picking = $derived(state.editing && formula(state.draft));
-
   const anchor = $derived(picking ? referenceAt(state.draft, state.caret) : undefined);
-
-  const relock = (column: boolean, row: boolean) => {
-    const input = state.field;
-    if (input === null) return;
-    const next = lockedAt(state.draft, state.caret, column, row);
-    if (next === undefined) return;
-    state.draft = next.text;
-    state.span = undefined;
-    setTimeout(() => {
-      input.focus();
-      input.setSelectionRange(next.caret, next.caret);
-      state.caret = next.caret;
-    }, 0);
-  };
-
-  const track = () => {
-    state.caret = state.field?.selectionStart ?? state.draft.length;
-  };
-
-  const start = (seed?: string) => {
-    if (sheet === undefined || ref === undefined) return;
-    state.handoff = continueWritingHandoff(state.handoff, shown, seed ?? "");
-    state.draft = state.handoff.text;
-    state.span = undefined;
-    state.editingAt = ref;
-    state.editing = true;
-    setTimeout(() => {
-      const pending = state.handoff;
-      const input = state.field;
-      if (pending === undefined || input === null) return;
-      input.focus();
-      if (pending.selectAll) input.select();
-      else input.setSelectionRange(pending.text.length, pending.text.length);
-      state.handoff = undefined;
-      state.caret = state.draft.length;
-    }, 0);
-  };
-
-  runsTheWritingSession({
-    channel,
-    picker,
-    picking: () => picking,
-    address: () => (
-      state.editing && state.editingAt !== undefined ? keyOf(state.editingAt) : undefined
-    ),
-    draft: () => state.draft,
-    selected: () => ref,
-    abandon: () => {
-      state.editing = false;
-      state.handoff = undefined;
-      state.refusal = undefined;
-    },
-    begin: (seed) => start(seed)
+  const { picker, relock, cycle, track } = createCellReferenceActions(state);
+  const { start, commit, cancel, changed, keydown } = createCellWritingActions({
+    state, channel, picker, register, cycle,
+    resourceId: sheetId,
+    get runtime() { return runtime; },
+    get selection() { return view.selection; },
+    get shown() { return shown; }
   });
 
-  const commit = () => {
-    const at = state.editingAt;
-    const live = runtime?.sheet;
-    const resourceId = view.active.resourceId;
-    if (!state.editing || at === undefined || live === undefined) return;
-    state.editing = false;
-    channel.disarm(picker);
-    const known = factsOf(resourceId, live);
-    if (state.draft === editableOf(known, cellAt(live, at))) return;
-    const edit = typed(live, gridOf(live.body), at, state.draft, known);
-    if (edit.refused !== undefined) {
-      state.refusal = edit.refused;
-      return;
-    }
-    state.refusal = undefined;
-    if (edit.ops.length > 0) runtime?.apply(recalculating(register, resourceId, live, edit.ops));
-  };
-
-  const keydown = (event: KeyboardEvent) => {
-    if (event.key === "Escape") {
-      event.preventDefault();
-      state.editing = false;
-      channel.disarm(picker);
-      channel.endWriting();
-      return;
-    }
-    if (event.key === "Enter") {
-      event.preventDefault();
-      commit();
-      channel.endWriting();
-      return;
-    }
-    if (event.key === "F4") {
-      const input = state.field;
-      if (input === null) return;
-      event.preventDefault();
-      const held = anchored(state.draft, input.selectionStart ?? state.draft.length);
-      if (held === undefined) return;
-      state.draft = held.text;
-      state.span = undefined;
-      setTimeout(() => input.setSelectionRange(held.caret, held.caret), 0);
-    }
-  };
+  runsTheWritingSession({
+    channel, picker, commit, cancel,
+    picking: () => picking,
+    address: () => state.editing && state.editingAt !== undefined ? keyOf(state.editingAt) : undefined,
+    targets: () => state.targets.map(keyOf),
+    draft: () => state.draft,
+    selected: () => view.selection,
+    begin: start
+  });
 </script>
 
 {#if sheet && ref}
@@ -181,10 +67,7 @@
         aria-label={expression ? "Expression" : "Value"}
         class="text-body h-9 w-full font-mono"
         onkeydown={keydown}
-        oninput={() => {
-          state.span = undefined;
-          track();
-        }}
+        oninput={changed}
         onkeyup={track}
         onclick={track}
         onselect={track}
@@ -193,13 +76,13 @@
         }}
       />
       {#if anchor !== undefined}
-        <div class="locks" role="group" aria-label="What copying holds still">
+        <div class="locks" class:is-range={anchor.last !== undefined} role="group" aria-label="What copying holds still">
           {#each LOCKS as lock (lock.label)}
             <button
               type="button"
               class="lock"
               aria-pressed={anchor.column === lock.column && anchor.row === lock.row}
-              title={lock.hint}
+              title={`${anchorLabel(anchor, lock.column, lock.row)} — ${lock.hint}`}
               onmousedown={(event) => event.preventDefault()}
               onclick={() => relock(lock.column, lock.row)}
             >
@@ -230,6 +113,7 @@
 
 <style>
   .head {
+    min-width: 0;
     display: flex;
     flex-direction: column;
     gap: calc(var(--token-spacing-unit) * 1);
@@ -237,15 +121,23 @@
   }
 
   .locks {
-    display: flex;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 2px;
     padding: 2px;
     border: var(--token-hairline) solid var(--token-border-strong);
     border-radius: var(--token-radius-control);
   }
 
+  .locks.is-range {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .lock {
-    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
     border-radius: var(--token-radius-control);
     padding: calc(var(--token-spacing-unit) * 0.75) 0;
     color: var(--token-ink-secondary);

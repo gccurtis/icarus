@@ -41,8 +41,12 @@ export const insertedReference = (
     previous !== undefined &&
     previous.anchor === anchor &&
     previous.gesture === gesture;
-  const from = growing ? previous.from : selection.from;
-  const to = growing ? previous.to : selection.to;
+  // A picked reference replaces the selected expression, never its '='. This
+  // also covers entering an existing formula with the whole field selected.
+  const leading = text.search(/\S/);
+  const bodyStart = text[leading] === "=" ? leading + 1 : 0;
+  const from = Math.max(bodyStart, growing ? previous.from : selection.from);
+  const to = Math.max(from, growing ? previous.to : selection.to);
   const next = `${text.slice(0, from)}${address}${text.slice(to)}`;
   const caret = from + address.length;
   return { text: next, span: { from, to: caret, anchor, gesture }, caret };

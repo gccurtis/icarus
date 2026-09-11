@@ -31,15 +31,32 @@ describe("the project picking channel", () => {
     expect(channel.session).toBe(2);
   });
 
-  it("buffers a fast opening-key burst until the writing field takes it", () => {
+  it("delivers every opening key only to the currently mounted writer", () => {
     const channel = createPickingChannel();
-
+    const writer = { begin: vi.fn(), commit: vi.fn() };
+    channel.writeWith(writer);
     channel.beginWriting("D");
     channel.beginWriting("u");
     channel.beginWriting("rable");
 
-    expect(channel.begun).toEqual({ seed: "Durable", at: 3 });
-    channel.writingTaken();
-    expect(channel.begun).toBeUndefined();
+    expect(writer.begin.mock.calls).toEqual([["D"], ["u"], ["rable"]]);
+    channel.commitWriting();
+    expect(writer.commit).toHaveBeenCalledOnce();
+    channel.stopWritingWith(writer);
+    channel.beginWriting("discarded");
+    const other = { begin: vi.fn(), commit: vi.fn() };
+    channel.writeWith(other);
+    expect(other.begin).not.toHaveBeenCalled();
+    channel.stopWritingWith(writer);
+    channel.beginWriting("fresh");
+    expect(other.begin).toHaveBeenCalledExactlyOnceWith("fresh");
+  });
+
+  it("never hands unclaimed range keystrokes to a later cell or another sheet", () => {
+    const channel = createPickingChannel();
+    channel.beginWriting("This must not move");
+    const writer = { begin: vi.fn(), commit: vi.fn() };
+    channel.writeWith(writer);
+    expect(writer.begin).not.toHaveBeenCalled();
   });
 });

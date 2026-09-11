@@ -6,6 +6,8 @@ import type { WritingHandoff } from "$app-views/categories/spreadsheet-editor/pr
 export class CellHeadState {
   editing = $state(false);
   editingAt = $state<CellRef>();
+  targets = $state<CellRef[]>([]);
+  dirty = $state(false);
   draft = $state("");
   field = $state<HTMLInputElement | null>(null);
   span = $state<ReferenceSpan>();

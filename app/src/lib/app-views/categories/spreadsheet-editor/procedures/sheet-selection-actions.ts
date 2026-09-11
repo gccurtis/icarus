@@ -27,10 +27,14 @@ export type SheetSelectionActions = {
 export const createSheetSelectionActions = (context: SheetActionContext): SheetSelectionActions => {
   const show = (signal: Signal | undefined) => {
     if (signal === undefined) {
-      if (context.view.selection !== undefined || context.view.inspected !== WHOLE) context.view.inspect(WHOLE);
+      if (context.view.selection !== undefined || context.view.inspected !== WHOLE) {
+        context.channel.commitWriting();
+        context.view.inspect(WHOLE);
+      }
       return;
     }
     if (sameSelection(context.view.selection, signal.selection) && context.view.inspected === signal.key) return;
+    context.channel.commitWriting();
     context.view.inspect(signal.key, signal.selection);
   };
 

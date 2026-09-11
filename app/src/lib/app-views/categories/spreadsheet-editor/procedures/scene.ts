@@ -28,6 +28,7 @@ import { spillSpans } from "$app-views/categories/spreadsheet-editor/procedures/
 import { DEFAULT_COLUMN_WIDTH, DEFAULT_ROW_HEIGHT } from "$app-views/categories/spreadsheet-editor/procedures/structure";
 import { displayOf, errorOf, kindOf } from "$app-views/categories/spreadsheet-editor/procedures/values";
 import { editableOf, shownOf, type SheetFacts } from "$app-views/categories/spreadsheet-editor/procedures/recalculation";
+import type { Draft } from "$app-views/categories/spreadsheet-editor/procedures/picking.svelte";
 
 export type { SurfacePin } from "$authored-components/sheet-surface";
 
@@ -83,11 +84,12 @@ export const sceneOf = (
   grid: Grid,
   pins: ReadonlyMap<string, SurfacePin>,
   facts: SheetFacts,
-  draft?: { readonly at: string; readonly text: string }
+  draft?: Draft
 ): SurfaceScene => {
   const merges = mergeSpans(sheet, grid);
   const spills = spillSpans(sheet, grid);
   const cache = new Map<string, SurfaceCell>();
+  const writingAt = new Set(draft?.targets);
 
   const columns: SurfaceTrack[] = grid.columns.map((column, index) => ({
     id: column.id,
@@ -142,7 +144,7 @@ export const sceneOf = (
      * the marks stay the cell's own, because a number turning into left-aligned
      * text mid-keystroke reads as the cell having changed kind when it has not.
      */
-    const writing = draft?.at === key ? draft.text : undefined;
+    const writing = writingAt.has(key) ? draft?.text : undefined;
 
     const cell: SurfaceCell = {
       text: writing ?? text,

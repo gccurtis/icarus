@@ -11,6 +11,7 @@
     PanelStats
   } from "$authored-components/panel";
   import FormatBand from "$app-views/categories/spreadsheet-editor/components/format-band.svelte";
+  import CellHead from "$app-views/categories/spreadsheet-editor/components/cell-head.svelte";
   import NumberFormat from "$app-views/categories/spreadsheet-editor/components/number-format.svelte";
   import { gridOf, rectLabelOf, refsIn, type Rect } from "$app-views/categories/spreadsheet-editor/procedures/addresses";
   import { cleared, type Edit } from "$app-views/categories/spreadsheet-editor/procedures/cells";
@@ -75,6 +76,7 @@
   {/snippet}
 
   {#if sheet && primary && total}
+    <CellHead />
     <PanelStats label="Selection">
       <PanelStat value={String(total.cells)} label={total.cells === 1 ? "cell" : "cells"} />
       <PanelStat value={String(total.filled)} label="with content" />
