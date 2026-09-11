@@ -1,6 +1,6 @@
 # Icarus delivery backlog
 
-Updated September 11, 2026 · source baseline: `main@c2505f0`.
+Updated September 10, 2026 · source baseline: `main@4a7be0c`.
 
 **Direction confirmed by the owner: reliable end-to-end work first.** This is a
 planning and dispatch file, not a declaration that its features are missing or
@@ -49,6 +49,27 @@ is a release gate even when single-user workflow reliability is scheduled first.
    handoff. Different editor procedures remain independently owned.
 5. Return evidence and a small reviewable change. A package remains open when only
    one slice is delivered; record the remaining slice instead of checking it off.
+
+### Landed baseline carried through the September 10 rebase
+
+The following bounded interface work is already on `main`; it is recorded here so
+the consolidated packages do not accidentally schedule it again:
+
+- Project Overview and External Files use the simplified History dropdown; External
+  history is searchable and no longer carries the redundant explanatory footer.
+- External Files is the user-facing category name. Its table has Author filtering,
+  compact path/time presentation, readable Size, and a same-row Table/Directory
+  toggle. Redundant library/directory helper text is gone while directory inspection
+  remains available.
+- The External file inspector places information before its action grid, keeps
+  rename in its owning surface, removes the duplicate rename/path/selection blocks,
+  and uses the simplified semantic-status treatment.
+- Persona configuration uses Scope/Default Scope, and the four permanent workspace
+  tabs remain fixed while transient tabs accept wheel and horizontal-trackpad scroll.
+
+These landed slices do not by themselves close the broader EXT-04, EXT-05, COL-01,
+COL-02, SCOPE-02, or KEY-02 outcomes. Their remaining closeout and workflow evidence
+still follow the package cards below.
 
 <a id="register"></a>
 ## 2. Delivery register
@@ -137,7 +158,6 @@ remain in scope at their points of use.
 | External UX | Paths are compressed secondary metadata with full-path hover text. Table/Directory is one toggle in the same control row. Preserve directory exploration in the inspector and Generated Description. |
 | Unchanged comments | Leave the document/presentation empty Comments state alone; the proposed extra empty-state action was withdrawn. |
 | Naming and browser | Use presentation for the resource, slide for its contents. Chromium is the target; browser versus desktop shortcut behavior is not a cross-browser project. |
-| Rejected investigation material | The transcription-derived scoped investigations and the separate hosted investigation report are withdrawn. They are not requirements, decisions, or evidence for future implementation. Independently requested build and tactical work remains in this backlog. |
 | Architecture and quality | Follow root AGENTS: explicit state lifetime, bounded procedural chains, modular/reviewable files, no new baseline debt, current-schema-only changes, atomic Store intents and recovery. No legacy readers, renamed aliases, or migration scaffolding. |
 | Wiki | Markdown with useful Mermaid diagrams and selective HTML replaces the old system in a separately authorized reset. This backlog rewrite does not perform that reset. |
 
@@ -433,8 +453,9 @@ lists and inspectors ([E12](#e12)).
 **Work:** Design / Build. **First slice:** one native structured-content transfer and one linked analytic transfer across editors, with an explicit identity table for each object kind.
 
 - Cover documents, presentations, spreadsheets, charts, tables and rich blocks without flattening understood content to images/plain text. Preserve semantics and intended shared references without accidentally duplicating unique placement IDs.
+- When spreadsheet formulas are copied within or between compatible spreadsheet surfaces, shift relative row and column references by the pasted-cell offset, preserve absolute references, and shift only the relative axis in mixed references.
 - Charts link to the canonical object by default. Define optional duplicate/detach behavior and distinguish it from ordinary content copying and copy-only personal assets.
-- **Close when:** source changes propagate only to intended linked views, independent copies remain independent, and cut/paste, undo/redo, reload, source deletion and access revocation follow the declared contract.
+- **Close when:** source changes propagate only to intended linked views, independent copies remain independent, copied formulas resolve to the intended cells and ranges, and cut/paste, undo/redo, reload, source deletion and access revocation follow the declared contract.
 
 ### Keyboard operation and activity
 
@@ -735,7 +756,7 @@ into their owning feature packages instead of being scheduled twice.
 | 2.6 Agents activity, inspectable scope, add resource/set, remove Tools, scope label, preserve Skills | COL-02; SCOPE-01/SCOPE-02; ASSET-03 |
 | 2.7 Turn panel, finding/source inspection/acceptance, chat overhaul | RSH-01–RSH-03; AI-03 |
 | 2.8 Variables, selected-template section, unchanged empty Comments | EDIT-01; ASSET-05; settled constraints |
-| 4–6 Dependencies, epic index and settled decisions | Register, constraints, package cards and retained decision briefs replace the duplicated lists; the former scoped-investigation section is intentionally withdrawn |
+| 4–6 Dependencies, epic index and settled decisions | Register, constraints, package cards and retained decision briefs replace the duplicated lists |
 
 Two intake dependencies have been made more precise: activity UX can improve using
 existing actors before full sign-in ships; extraction does not require completion
