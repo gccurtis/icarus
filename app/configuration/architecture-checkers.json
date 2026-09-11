@@ -18,6 +18,8 @@
       "surfaces/effects-declare-runes.mjs"
     ],
     "BEH-03": [
+      "across/pure-island-import-closure.mjs",
+      "across/pure-island-has-no-ambient-authority.mjs",
       "capabilities/capability-functions-are-explicit.mjs",
       "model/model-functions-are-explicit.mjs",
       "procedural-transparency/component-procedures-are-explicit.mjs"

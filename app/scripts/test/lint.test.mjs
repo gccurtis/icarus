@@ -148,3 +148,55 @@ describe("explicit-dependency functions retain their legal boundaries", () => {
     );
   });
 });
+
+describe("pure islands retain their legal language", () => {
+  test("fields and explicitly supplied mutator ports remain ordinary inputs", async () => {
+    const imports = checks.find(({ name }) => name === "pure-island-import-closure");
+    const authority = checks.find(({ name }) => name === "pure-island-has-no-ambient-authority");
+    assert.ok(imports);
+    assert.ok(authority);
+    const changes = [
+      {
+        path: "src/lib/model/client/pure-positive/state.ts",
+        write: `export type PurePositiveState = { body: string };\nexport const createPurePositiveState = (): PurePositiveState => ({ body: "ready" });\n`
+      },
+      {
+        path: "src/lib/model/client/pure-positive/types.ts",
+        write: `export type WritePort = { write(value: string): Promise<void> };\n`
+      },
+      {
+        path: "src/lib/model/client/pure-positive/methods/get-body.ts",
+        write: `import type { PurePositiveState } from "../state";\nexport const getBody = (runtime: PurePositiveState): string => runtime.body;\n`
+      },
+      {
+        path: "src/lib/model/client/pure-positive/methods/save-body.ts",
+        write: `import type { PurePositiveState } from "../state";\nimport type { WritePort } from "../types";\nexport const saveBody = async (runtime: PurePositiveState, port: WritePort): Promise<void> => { await port.write(runtime.body); };\n`
+      },
+      {
+        path: "src/lib/app-views/categories/pure-positive/procedures/read.ts",
+        write: `type ExplicitWindow = { body: string };\ntype WritePort = { write(value: string): void };\nexport const read = (window: ExplicitWindow, port: WritePort): string => { port.write(window.body); return window.body; };\n`
+      }
+    ];
+
+    const importFindings = await breaking(base, changes, (tree) => imports.run(tree));
+    const authorityFindings = await breaking(base, changes, (tree) => authority.run(tree));
+    const relevant = (finding) =>
+      finding.path.includes("/model/client/pure-positive/") ||
+      finding.path.includes("/categories/pure-positive/");
+    assert.deepEqual(importFindings.filter(relevant), []);
+    assert.deepEqual(authorityFindings.filter(relevant), []);
+  });
+
+  test("raw unknown is confined to a named local admission function", async () => {
+    const authority = checks.find(({ name }) => name === "pure-island-has-no-ambient-authority");
+    assert.ok(authority);
+    const findings = await breaking(base, [{
+      path: "src/lib/capabilities/pure-positive/api/admit-input.ts",
+      write: `export const admitInput = (raw: unknown): string => typeof raw === "string" ? raw : "";\n`
+    }], (tree) => authority.run(tree));
+    assert.deepEqual(
+      findings.filter(({ path }) => path.includes("/capabilities/pure-positive/")),
+      []
+    );
+  });
+});

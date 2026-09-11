@@ -12,6 +12,7 @@ import { MUTATIONS as COHESIVE_UNITS } from "./mutations/cohesive-units.mjs";
 import { MUTATIONS as GATED_CROSSINGS } from "./mutations/gated-crossings.mjs";
 import { MUTATIONS as OWNED_LIFECYCLE } from "./mutations/owned-lifecycle.mjs";
 import { MUTATIONS as PROCEDURAL_TRANSPARENCY } from "./mutations/procedural-transparency.mjs";
+import { PROOF_MUTATIONS as PURE_FUNCTIONS } from "./mutations/pure-functions.mjs";
 import { MUTATIONS as SCOPED_AUTHORITY } from "./mutations/scoped-authority.mjs";
 import { MUTATIONS as STATE_OWNERSHIP } from "./mutations/state-ownership.mjs";
 
@@ -19,6 +20,7 @@ const view = (name, body) => ({ path: `src/lib/surfaces/top-bar/procedures/${nam
 const appended = (text) => ({ edit: (before) => `${before}\n${text}\n` });
 
 export const MUTATIONS = [
+  ...PURE_FUNCTIONS,
   // ------------------------------------------------------------ capabilities ----
   {
     check: "nothing-reaches-inside-a-capability",

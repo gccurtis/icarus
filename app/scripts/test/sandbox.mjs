@@ -88,6 +88,23 @@ export const breaking = async (base, changes, body) => {
       writeFileSync(path, change.edit(before));
       continue;
     }
+    if (change.link) {
+      const existed = existsSync(path);
+      if (existed) throw new Error(`cannot create mutation symlink over ${path}`);
+      const missingParents = [];
+      let parent = dirname(path);
+      while (parent !== base && !existsSync(parent)) {
+        missingParents.push(parent);
+        parent = dirname(parent);
+      }
+      undo.push(() => {
+        rmSync(path, { force: true });
+        for (const missing of missingParents) rmSync(missing, { force: true, recursive: true });
+      });
+      mkdirSync(dirname(path), { recursive: true });
+      symlinkSync(join(base, change.link), path);
+      continue;
+    }
     if (change.remove) {
       const before = existsSync(path) ? readFileSync(path, "utf8") : null;
       undo.push(() => (before === null ? undefined : writeFileSync(path, before)));

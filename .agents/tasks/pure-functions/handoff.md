@@ -6,15 +6,15 @@ Do not include credentials or copy sensitive logs.
 
 ## Snapshot
 
-- Updated: 2026-09-11T13:56:05-04:00
-- Status: superseding architecture contract drafted, adversarially reviewed,
-  documentation-verified, committed, and pushed for user review
+- Updated: 2026-09-11T15:40:42-04:00
+- Status: contract approved; PF-01/PF-02 enforcement foundation implemented
+  and focused verification green
 - Worktree: `/home/jakul/cyberia/icarus-worktrees/pure-functions`
 - Branch: `work/pure-functions`
 - Head when initialized: `b152b52ddd1fef5dfdaf8e2a4b6d03796cf011fd`
-- Current verified contract commit / dirty paths:
-  `fcc92c5e92a7e4330779db387d915240438c8a8d`; clean before this publication-only
-  handoff update
+- Current branch head before this dirty slice:
+  `6c0a73f048ffaed5622c4a2c18adeed85252c3ad`; dirty paths are the PF-01/PF-02
+  checkers/shared analysis, their catalog/tests, and this handoff
 - Integration target / base SHA, if relevant: `origin/main` / `b152b52ddd1fef5dfdaf8e2a4b6d03796cf011fd`
 - Starting worktree/base record: optional `worktree.json` beside this handoff;
   link it when present and verify it against Git
@@ -34,11 +34,10 @@ and ratchet existing findings without hiding new debt. Product-model and feature
 migration is outside this checker-only slice unless a small fixture or generated
 template must change to prove the enforcement.
 
-The follow-up request supersedes the prototype design, but does not yet authorize
-product migration: write a detailed task contract for capability, model-method,
-and component-procedure pure islands; model acquire/commit/release ports; runtime
-capability transformers and remote registration; exact checker guarantees; and
-an adversarial loophole review. Describe the resulting file architecture in chat.
+The follow-up request superseded the prototype design and produced the approved
+`contract.md`. The user has now explicitly authorized implementation of that
+contract, including the required checker replacement, model/runtime/capability
+architecture, generators, migrations, and proportionate behavioral verification.
 
 ## Decisions and authority
 
@@ -74,12 +73,15 @@ an adversarial loophole review. Describe the resulting file architecture in chat
 - The central static registry governs remote and production-internal capability
   calls. Remote calls authenticate and resolve a server-created scope grant;
   capability transformers receive only a fresh exact acquired-model subset.
+- User approval received after contract publication: implement the contract. This
+  authorizes scoped product/checker changes and focused commits/pushes on
+  `work/pure-functions`; it does not authorize integration into `main`.
 
 ## Ownership and orientation
 
 | Owner | Owned paths / work | Read-only or excluded paths | Acceptance check |
 | --- | --- | --- | --- |
-| Lead | Task contract and this handoff; prior checker prototype remains unchanged in this pass | Product/checker migration beyond the contract | Contract specifies enforceable topology, lifecycle, checkers, generators, verification, and adversarial cases |
+| Lead | Enforcement foundations; model state/ports/runtime builders; Store and one read-only exemplar; capability authority/registry/gateway/adapters/remotes; component procedures/adapters/effects; generators/tests/docs/handoff | Main integration, unrelated product behavior, credentials/development data | Approved contract completion criteria and proportional focused/full verification |
 
 - Worktree workflow: `.agents/skills/icarus-branch-integration/SKILL.md`
 - Capability/Store boundary: `.agents/skills/icarus-store-change/SKILL.md`
@@ -91,6 +93,42 @@ an adversarial loophole review. Describe the resulting file architecture in chat
   EDGE-01, and the checker catalog/mutation registry.
 
 ## Progress and current state
+
+- Approved implementation sequence: (1) replace the prototype with shared
+  filesystem/type/provenance enforcement, (2) implement guarded model leases and
+  the read-only/Store exemplars, (3) implement central authority/registry/runner
+  and migrate capabilities, (4) migrate component procedures/effects and
+  generators, then run full certification. Each slice receives a focused commit.
+- No new baseline, suppression, compatibility bridge, or scope-exclusion manifest
+  is authorized. Full enforcement may report unmigrated code between slices.
+
+- Implemented a single filesystem-derived owner catalog for all capabilities,
+  model `methods/` trees, and every discovered component `procedures/` owner.
+  It includes nested helpers, excludes tests/fixtures as roots, admits only each
+  island's exact local support zone, and fails alternate executable source
+  languages closed.
+- Implemented a shared TypeScript `Program`, lexical symbol resolver, and module
+  graph using the repository Svelte alias map and bundler resolution mode.
+- Added unbaselined `pure-island-import-closure` (PF-01): static value/type
+  imports, re-exports, relative/alias/package edges, transitive barrels,
+  import-type/dynamic/require/triple-slash loading, ambient types/declarations,
+  unsupported source forms, unresolved edges, production-to-test edges, and
+  symlink escapes are governed. Findings include the shortest discovered source
+  chain and resolved target.
+- Added unbaselined `pure-island-has-no-ambient-authority` (PF-02): symbol-aware
+  ambient access, mutable/effectful module state, `this`/classes/accessors/
+  decorators, dynamic evaluation, unsafe assertions/suppressions, broad generic
+  authority, detached promises/closures, invalid await provenance, and port
+  reflection are rejected. Explicitly supplied parameters remain legal even
+  when named like globals; `runtime.body` and `getBody(runtime)` are positive
+  fixtures.
+- Added batched adversarial mutation coverage for 36 bypasses. The batch keeps
+  each attack independently asserted while building only one compiler program
+  per checker; the general checker suite retains one canonical mutation per
+  checker. The sandbox now supports exact mutation-only symlinks.
+- Current intentionally red production inventory: PF-01 reports 5,864 findings;
+  PF-02 reports 3,862 findings. Both have `baseline: false`; no finding was
+  added to `architecture-baseline.json`.
 
 - Added `.agents/tasks/pure-functions/contract.md`, a normative 17-section
   architecture contract covering target file layout, pure-island syntax/type
@@ -108,9 +146,9 @@ an adversarial loophole review. Describe the resulting file architecture in chat
   transaction cannot be mechanically held across an async lease; Store needs an
   acquisition-local stage and short durable commit. Current Store,
   OperationFlights, and native-file queues do not prove cross-process exclusion.
-- This pass deliberately did not change product, generator, or checker sources.
-  The earlier checker prototype remains committed but is superseded as a future
-  implementation specification by the new contract.
+- Product/runtime/model sources and generators are not changed in this first
+  implementation slice. The earlier checker prototype remains temporarily while
+  PF-03 through PF-16 replace its remaining field/entry/gateway responsibilities.
 
 Prior prototype state, retained for branch history but superseded by the contract:
 
@@ -151,6 +189,12 @@ Prior prototype state, retained for branch history but superseded by the contrac
 | `node .agents/scripts/verify.mjs agents` | Worktree/agent helpers | 45/45 passed | `.agents/runtime/runs/1789141426521-agents-0de83ffe` |
 | `git diff --check` | Contract and handoff documentation | Passed before handoff finalization | Terminal output |
 | `node .agents/scripts/verify.mjs agents` | Contract worktree helper invariants | 45/45 passed | `.agents/runtime/runs/1789149219756-agents-187df964` |
+| `node --check` on new checker/test modules; `git diff --check` | PF-01/PF-02 source syntax/whitespace | Passed | Terminal output |
+| `node --test --test-isolation=none scripts/test/pure-functions.test.mjs` | 36 batched adversarial PF-01/PF-02 bypasses | 2/2 checker batches passed | Terminal output |
+| `node --test --test-isolation=none --test-name-pattern='pure islands retain' scripts/test/lint.test.mjs` | Positive field, explicit mutator port, lexical shadow, and local admission boundaries | 2/2 passed | Terminal output |
+| `node --test --test-isolation=none scripts/test/lint.test.mjs scripts/test/checker-catalog.test.mjs scripts/test/pure-functions.test.mjs` | Catalog, full checker mutation suite, positive boundaries, and 36 adversarial PF bypasses after lexical-global fix | 273/273 passed | Terminal output |
+| `node scripts/lint.mjs pure-island-import-closure \| tail -n 2` | Entire governed production tree, unbaselined | Expected red: 5,864 findings | Terminal output |
+| `node scripts/lint.mjs pure-island-has-no-ambient-authority \| tail -n 2` | Entire governed production tree, unbaselined | Expected red: 3,862 findings | Terminal output |
 
 Record visual states actually inspected and remaining gaps. Link logs/screenshots
 in ignored runtime storage or a task-owned temporary directory; local evidence
@@ -170,22 +214,21 @@ skipped live-provider tests as passing.
 
 ## Risks and next executable step
 
-- The currently implemented prototype checker is syntactic and baseline-backed;
-  it does not yet provide the contract's resolved type closure, exact leases,
-  registry/gateway, adapter grammar, or behavioral guarantees.
-- This contract-only pass does not migrate the 1,096 prototype findings or alter
-  product behavior. The superseding contract ultimately permits no baseline or
-  checker exemption; the migration branch remains red until governed production
-  complies.
+- PF-01/PF-02 now provide resolved type/import closure and lexical authority
+  enforcement. PF-03 through PF-16, exact leases, registry/gateway, adapter
+  grammar, product migration, and their behavioral contracts remain.
+- This first enforcement slice does not migrate production findings. The branch
+  is intentionally red until governed production complies; integration remains
+  blocked on the complete zero-baseline result.
 - Store staging, scope-grant revocation semantics, durable checkpoints, and
   single-writer versus multi-process deployment guarantees require executable
   exemplars before broad migration.
 - Dependencies and generated tool state are ignored local artifacts. No server,
   Store, browser, or provider test was needed or started.
-- Next executable step after user approval: replace the prototype checker design
-  with PF-01/PF-02 shared discovery/provenance foundations, then implement one
-  read-only model port and the Store staged port plus the central invocation
-  runner before migrating capabilities broadly.
+- Next executable step: commit/push the verified PF-01/PF-02 foundation, then add
+  PF-03/PF-04/PF-05 boundary checks and begin the read-only model `state.ts` /
+  guarded `port.ts` exemplar before designing the Store stage around its current
+  short synchronous durable transaction.
 
 ## Publication / handoff
 
@@ -198,5 +241,6 @@ skipped live-provider tests as passing.
   `origin/work/pure-functions`; no main integration
 - Worktree cleanup / retained local artifacts: worktree intentionally retained;
   ignored local-configuration symlink exists
-- Next owner and remaining work: user reviews the contract; lead retains the
-  worktree, and product/checker rollout waits for that approval
+- Next owner and remaining work: lead implements the approved contract in the
+  retained worktree; user review is next required only if a new product/security
+  semantic decision falls outside the approved contract
