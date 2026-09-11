@@ -14,13 +14,18 @@
     "BEH-01": ["procedural-transparency/production-svelte-imports-no-capability.mjs"],
     "BEH-02": [
       "procedural-transparency/component-effects-have-a-home.mjs",
+      "across/effects-are-boundaries.mjs",
       "model/runes-match-the-extension.mjs",
       "surfaces/effects-declare-runes.mjs"
     ],
     "BEH-03": [
       "across/pure-island-import-closure.mjs",
       "across/pure-island-has-no-ambient-authority.mjs",
+      "across/pure-island-exports-are-closed.mjs",
+      "across/component-procedures-are-closed.mjs",
       "capabilities/capability-functions-are-explicit.mjs",
+      "model/model-state-is-fields.mjs",
+      "model/model-operations-are-free.mjs",
       "model/model-functions-are-explicit.mjs",
       "procedural-transparency/component-procedures-are-explicit.mjs"
     ],
@@ -31,7 +36,10 @@
     ],
     "BEH-05": ["procedural-transparency/async-command-state-lives-with-command.mjs"],
 
-    "AUTH-01": ["capabilities/no-procedure-acts-outside-a-scope.mjs"],
+    "AUTH-01": [
+      "capabilities/capability-contract-is-local.mjs",
+      "capabilities/no-procedure-acts-outside-a-scope.mjs"
+    ],
     "AUTH-02": ["scoped-authority/capability-scope-is-consumed.mjs"],
     "AUTH-03": ["scoped-authority/browser-capabilities-hide-persistence-coordinates.mjs"],
     "AUTH-04": ["scoped-authority/subject-write-proves-ownership.mjs"],
@@ -40,10 +48,12 @@
 
     "LIFE-01": [
       "model/constructor-is-called-by-the-runtime.mjs",
+      "model/model-port-has-one-lifecycle.mjs",
       "model/nothing-builds-at-module-load.mjs",
       "runtime/builder-is-not-exported.mjs",
       "runtime/one-holder-of-the-instance.mjs",
       "runtime/one-caller-of-the-initializer.mjs",
+      "runtime/runtime-alone-builds-models.mjs",
       "runtime/graph-matches-its-aggregate.mjs",
       "runtime/objects-are-built-in-order.mjs",
       "runtime/accessor-refuses-twice.mjs"
@@ -53,7 +63,10 @@
       "views/runtime-through-workspace-state.mjs"
     ],
     "LIFE-03": ["owned-lifecycle/accessors-are-observational.mjs"],
-    "LIFE-04": ["owned-lifecycle/runtime-open-close-is-balanced.mjs"],
+    "LIFE-04": [
+      "owned-lifecycle/runtime-open-close-is-balanced.mjs",
+      "runtime/gateway-releases-every-acquisition.mjs"
+    ],
     "LIFE-05": ["owned-lifecycle/stateful-client-object-has-release.mjs"],
     "LIFE-06": ["owned-lifecycle/one-resource-one-edit-buffer.mjs"],
 
@@ -61,7 +74,10 @@
       "capabilities/storage-through-a-model.mjs",
       "representation/store-opens-nothing.mjs"
     ],
-    "TXN-02": ["atomic-invariants/multi-write-capability-uses-a-unit-of-work.mjs"],
+    "TXN-02": [
+      "atomic-invariants/multi-write-capability-uses-a-unit-of-work.mjs",
+      "runtime/one-staged-commit-owner.mjs"
+    ],
     "TXN-03": ["atomic-invariants/multi-table-intent-is-atomic.mjs"],
     "TXN-04": ["atomic-invariants/journal-recovers-before-readiness.mjs"],
     "TXN-05": ["atomic-invariants/revision-state-advances-together.mjs"],
@@ -70,6 +86,9 @@
       "across/one-crossing.mjs",
       "across/client-server-separation.mjs",
       "capabilities/capability-imports.mjs",
+      "runtime/capability-adapter-is-exact.mjs",
+      "runtime/capability-registry-is-bijective.mjs",
+      "runtime/remote-gateway-is-the-only-crossing.mjs",
       "surfaces/surface-imports.mjs",
       "views/view-imports-no-other-category.mjs",
       "views/view-imports-no-surface.mjs"
@@ -119,6 +138,7 @@
       "across/module-has-one-home.mjs",
       "across/names-are-kebab-case.mjs",
       "across/no-relative-imports.mjs",
+      "across/pure-generators-produce-the-contract.mjs",
       "capabilities/capability-layout.mjs",
       "capabilities/capability-lists-its-procedures.mjs",
       "capabilities/tests-are-one-of-three-kinds.mjs",

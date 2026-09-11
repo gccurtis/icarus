@@ -199,4 +199,43 @@ describe("pure islands retain their legal language", () => {
       []
     );
   });
+
+  test("primitive and recursively frozen literal exports remain closed", async () => {
+    const exports = checks.find(({ name }) => name === "pure-island-exports-are-closed");
+    assert.ok(exports);
+    const findings = await breaking(base, [{
+      path: "src/lib/app-views/categories/pure-positive/procedures/constants.ts",
+      write: `export const EMPTY = Object.freeze({ values: Object.freeze(["one", "two"]) });\nexport const COUNT = 2;\nexport const read = (value: string): string => value;\nexport type Name = string;\n`
+    }], (tree) => exports.run(tree));
+    assert.deepEqual(
+      findings.filter(({ path }) => path.includes("/categories/pure-positive/")),
+      []
+    );
+  });
+
+  test("model state may store a body field and query it through getBody(state)", async () => {
+    const state = checks.find(({ name }) => name === "model-state-is-fields");
+    const operations = checks.find(({ name }) => name === "model-operations-are-free");
+    assert.ok(state);
+    assert.ok(operations);
+    const changes = [
+      {
+        path: "src/lib/model/client/body-positive/state.ts",
+        write: `export type BodyPositiveState = { body: string };\nexport const createBodyPositiveState = (body: string): BodyPositiveState => ({ body });\n`
+      },
+      {
+        path: "src/lib/model/client/body-positive/methods/get-body.ts",
+        write: `import type { BodyPositiveState } from "../state";\nexport const getBody = (runtime: BodyPositiveState): string => runtime.body;\n`
+      },
+      {
+        path: "src/lib/model/client/body-positive/methods/version.ts",
+        write: `export const version = (): number => 1;\n`
+      }
+    ];
+    const stateFindings = await breaking(base, changes, (tree) => state.run(tree));
+    const operationFindings = await breaking(base, changes, (tree) => operations.run(tree));
+    const relevant = ({ path }) => path.includes("/model/client/body-positive/");
+    assert.deepEqual(stateFindings.filter(relevant), []);
+    assert.deepEqual(operationFindings.filter(relevant), []);
+  });
 });

@@ -5,6 +5,7 @@ import ts from "typescript";
 import { check } from "../shared/check.mjs";
 import { islandDependencyClosure, moduleEdges } from "../shared/pure-island-graph.mjs";
 import { islandLabel, isOrdinaryTypeScript, pureIslands } from "../shared/pure-islands.mjs";
+import { isDeeplyFrozenLiteral, isPrimitiveLiteral, unwrapExpression } from "../shared/pure-values.mjs";
 import { repositoryProgram } from "../shared/typescript-program.mjs";
 
 const ALLOWED_GLOBAL_CALLS = new Set([
@@ -194,56 +195,10 @@ const bindingIdentifiers = (name, found = []) => {
   return found;
 };
 
-const unwrap = (node) => {
-  let current = node;
-  while (
-    ts.isParenthesizedExpression(current) ||
-    ts.isAsExpression(current) ||
-    ts.isTypeAssertionExpression(current) ||
-    ts.isNonNullExpression(current)
-  ) current = current.expression;
-  return current;
-};
-
-const primitiveLiteral = (node) => {
-  const value = unwrap(node);
-  return (
-    ts.isStringLiteral(value) ||
-    ts.isNumericLiteral(value) ||
-    ts.isBigIntLiteral(value) ||
-    ts.isNoSubstitutionTemplateLiteral(value) ||
-    value.kind === ts.SyntaxKind.TrueKeyword ||
-    value.kind === ts.SyntaxKind.FalseKeyword ||
-    value.kind === ts.SyntaxKind.NullKeyword ||
-    (ts.isPrefixUnaryExpression(value) && primitiveLiteral(value.operand))
-  );
-};
-
-const frozenLiteral = (node) => {
-  const value = unwrap(node);
-  if (primitiveLiteral(value)) return true;
-  if (!ts.isCallExpression(value) || value.arguments.length !== 1) return false;
-  if (
-    !ts.isPropertyAccessExpression(value.expression) ||
-    !ts.isIdentifier(value.expression.expression) ||
-    value.expression.expression.text !== "Object" ||
-    value.expression.name.text !== "freeze"
-  ) return false;
-  const [literal] = value.arguments;
-  if (ts.isArrayLiteralExpression(literal)) {
-    return literal.elements.every((element) => !ts.isSpreadElement(element) && frozenLiteral(element));
-  }
-  if (!ts.isObjectLiteralExpression(literal)) return false;
-  return literal.properties.every((property) => {
-    if (!ts.isPropertyAssignment(property) || property.name && ts.isComputedPropertyName(property.name)) return false;
-    return frozenLiteral(property.initializer);
-  });
-};
-
 const safeModuleInitializer = (node) => {
   if (!node) return false;
-  const value = unwrap(node);
-  if (primitiveLiteral(value) || frozenLiteral(value)) return true;
+  const value = unwrapExpression(node);
+  if (isPrimitiveLiteral(value) || isDeeplyFrozenLiteral(value)) return true;
   if (ts.isArrowFunction(value) || ts.isFunctionExpression(value)) return true;
   if (ts.isRegularExpressionLiteral(value)) {
     const flags = value.text.slice(value.text.lastIndexOf("/") + 1);
@@ -309,9 +264,9 @@ const allowedAmbientUse = (node) => {
 };
 
 const rootIdentifier = (node) => {
-  let current = unwrap(node);
+  let current = unwrapExpression(node);
   while (ts.isPropertyAccessExpression(current) || ts.isElementAccessExpression(current)) {
-    current = unwrap(current.expression);
+    current = unwrapExpression(current.expression);
   }
   return ts.isIdentifier(current) ? current : null;
 };
@@ -400,7 +355,7 @@ const declarationWithin = (declaration, owner) => {
 };
 
 const explicitAsyncOrigin = (compiler, island, expression, owner, seen = new Set()) => {
-  const value = unwrap(expression);
+  const value = unwrapExpression(expression);
   if (seen.has(value)) return false;
   seen.add(value);
   if (ts.isConditionalExpression(value)) {
@@ -421,7 +376,7 @@ const explicitAsyncOrigin = (compiler, island, expression, owner, seen = new Set
     );
   }
   if (!ts.isCallExpression(value)) return false;
-  const callee = unwrap(value.expression);
+  const callee = unwrapExpression(value.expression);
   if (ts.isIdentifier(callee)) {
     const symbol = rawSymbol(compiler, callee);
     if (!symbol) return false;
@@ -439,8 +394,8 @@ const explicitAsyncOrigin = (compiler, island, expression, owner, seen = new Set
       const [argument] = value.arguments;
       return Boolean(
         argument &&
-        ts.isArrayLiteralExpression(unwrap(argument)) &&
-        unwrap(argument).elements.every((element) =>
+        ts.isArrayLiteralExpression(unwrapExpression(argument)) &&
+        unwrapExpression(argument).elements.every((element) =>
           explicitAsyncOrigin(compiler, island, element, owner, new Set(seen))
         )
       );

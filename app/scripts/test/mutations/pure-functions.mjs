@@ -8,6 +8,11 @@ const procedure = (name, write) => ({
   write
 });
 
+const model = (name, path, write) => ({
+  path: `src/lib/model/client/${name}/${path}`,
+  write
+});
+
 export const MUTATIONS = [
   {
     check: "pure-island-import-closure",
@@ -278,10 +283,250 @@ export const MUTATIONS = [
     says: "Function.call cannot rebind a port member",
     names: "pure-probe/procedures/call-port.ts",
     changes: [procedure("call-port", `type Port = { read(): string };\nexport const read = (port: Port): string => port.read.call(null);\n`)]
+  },
+  {
+    check: "pure-island-exports-are-closed",
+    subject: "lazy-singleton",
+    says: "an exported function cannot hide a lazy singleton",
+    names: "pure-probe/procedures/lazy-singleton.ts",
+    changes: [procedure("lazy-singleton", `let held: { value: string } | undefined;\nexport const singleton = (): { value: string } => held ??= { value: "held" };\n`)]
+  },
+  {
+    check: "pure-island-exports-are-closed",
+    subject: "mutable-export",
+    says: "an exported const array remains mutable",
+    names: "pure-probe/procedures/mutable-array.ts",
+    changes: [procedure("mutable-array", `export const values = ["one", "two"] as const;\n`)]
+  },
+  {
+    check: "pure-island-exports-are-closed",
+    subject: "live-export",
+    says: "a frozen object with a function member is still a callable facade",
+    names: "pure-probe/procedures/callable-facade.ts",
+    changes: [procedure("callable-facade", `export const facade = Object.freeze({ run: (): string => "run" });\n`)]
+  },
+  {
+    check: "pure-island-exports-are-closed",
+    subject: "live-export",
+    says: "a class instance cannot leave a pure island",
+    names: "pure-probe/procedures/class-instance.ts",
+    changes: [procedure("class-instance", `class Instance { readonly value = "held"; }\nexport const instance = new Instance();\n`)]
+  },
+  {
+    check: "pure-island-exports-are-closed",
+    subject: "live-export",
+    says: "a promise cannot be retained and exported",
+    names: "pure-probe/procedures/promise.ts",
+    changes: [procedure("promise", `export const pending = Promise.resolve("held");\n`)]
+  },
+  {
+    check: "pure-island-exports-are-closed",
+    says: "a computed symbol key is not deeply immutable plain data",
+    names: "pure-probe/procedures/symbol-key.ts",
+    changes: [procedure("symbol-key", `const hidden = Symbol("hidden");\nexport const value = Object.freeze({ [hidden]: "held" });\n`)]
+  },
+  {
+    check: "model-state-is-fields",
+    subject: "state-file",
+    says: "a model cannot omit its explicit state file",
+    names: "model/client/state-missing",
+    changes: [model("state-missing", "methods/read.ts", `export const read = (): string => "missing";\n`)]
+  },
+  {
+    check: "model-state-is-fields",
+    subject: "state-shape",
+    says: "a getter is behavior rather than a stored body field",
+    names: "state-getter/state.ts",
+    changes: [model("state-getter", "state.ts", `export class StateGetterState { get body(): string { return "hidden"; } }\nexport const createStateGetterState = (): StateGetterState => new StateGetterState();\n`)]
+  },
+  {
+    check: "model-state-is-fields",
+    subject: "fields-only",
+    says: "a state contract cannot declare a method",
+    names: "state-method/state.ts",
+    changes: [model("state-method", "state.ts", `export type StateMethodState = { body: string; getBody(): string };\nexport const createStateMethodState = (): StateMethodState => ({ body: "stored", getBody: () => "hidden" });\n`)]
+  },
+  {
+    check: "model-state-is-fields",
+    subject: "fields-only",
+    says: "a state contract cannot store a callable field",
+    names: "state-callable/state.ts",
+    changes: [model("state-callable", "state.ts", `export type StateCallableState = { body: string; read: () => string };\nexport const createStateCallableState = (): StateCallableState => ({ body: "stored", read: () => "hidden" });\n`)]
+  },
+  {
+    check: "model-state-is-fields",
+    subject: "fields-only",
+    says: "a state contract cannot inherit behavior or fields",
+    names: "state-inherited/state.ts",
+    changes: [model("state-inherited", "state.ts", `type Base = { body: string };\nexport interface StateInheritedState extends Base { revision: number }\nexport const createStateInheritedState = (): StateInheritedState => ({ body: "stored", revision: 1 });\n`)]
+  },
+  {
+    check: "model-state-is-fields",
+    subject: "state-shape",
+    says: "a Proxy cannot hide model state behavior",
+    names: "state-proxy/state.ts",
+    changes: [model("state-proxy", "state.ts", `export type StateProxyState = { body: string };\nexport const createStateProxyState = (): StateProxyState => new Proxy({ body: "stored" }, {});\n`)]
+  },
+  {
+    check: "model-operations-are-free",
+    subject: "state-first",
+    says: "a stateful operation cannot place caller data before state",
+    names: "operation-order/methods/write.ts",
+    changes: [
+      model("operation-order", "state.ts", `export type OperationOrderState = { body: string };\nexport const createOperationOrderState = (): OperationOrderState => ({ body: "stored" });\n`),
+      model("operation-order", "methods/write.ts", `import type { OperationOrderState } from "../state";\nexport const write = (body: string, state: OperationOrderState): void => { state.body = body; };\n`)
+    ]
+  },
+  {
+    check: "model-operations-are-free",
+    subject: "free-function",
+    says: "a model method cannot be attached to a class",
+    names: "operation-class/methods/read.ts",
+    changes: [model("operation-class", "methods/read.ts", `export class Reader { read(): string { return "hidden"; } }\n`)]
+  },
+  {
+    check: "model-operations-are-free",
+    subject: "state-access",
+    says: "a model method cannot import its outer port",
+    names: "operation-port/methods/read.ts",
+    changes: [
+      model("operation-port", "methods/read.ts", `import { acquire } from "../port";\nexport const read = (): unknown => acquire();\n`),
+      model("operation-port", "port.ts", `export const acquire = (): unknown => ({});\n`)
+    ]
+  },
+  {
+    check: "model-operations-are-free",
+    subject: "state-access",
+    says: "an operation cannot construct another model state",
+    names: "operation-construct/methods/rebuild.ts",
+    changes: [
+      model("operation-construct", "state.ts", `export type OperationConstructState = { body: string };\nexport const createOperationConstructState = (): OperationConstructState => ({ body: "stored" });\n`),
+      model("operation-construct", "methods/rebuild.ts", `import { createOperationConstructState } from "../state";\nexport const rebuild = (): OperationConstructState => createOperationConstructState();\nimport type { OperationConstructState } from "../state";\n`)
+    ]
+  },
+  {
+    check: "model-port-has-one-lifecycle",
+    subject: "acquired-port",
+    says: "an acquired port cannot expose release",
+    names: "lease-probe/port.ts",
+    changes: [
+      model("lease-probe", "state.ts", `export type LeaseProbeState = { body: string };\nexport const createLeaseProbeState = (): LeaseProbeState => ({ body: "ready" });\n`),
+      model("lease-probe", "methods/read.ts", `import type { LeaseProbeState } from "../state";\nexport const read = (state: LeaseProbeState): string => state.body;\n`),
+      model("lease-probe", "port.ts", `import { read } from "./methods/read";\nimport type { LeaseProbeState } from "./state";\nexport const bindLeaseProbe = (state: LeaseProbeState) => ({\n  lifetime: "client-workspace",\n  commitMode: "read-only",\n  acquire: () => Object.freeze({ read: () => read(state), commit: () => {}, release: () => {} }),\n  release: () => {}\n});\n`)
+    ]
+  },
+  {
+    check: "runtime-alone-builds-models",
+    subject: "construction",
+    says: "component code cannot construct model state",
+    names: "pure-runtime/procedures/build-model.ts",
+    changes: [
+      model("runtime-probe", "state.ts", `export type RuntimeProbeState = { body: string };\nexport const createRuntimeProbeState = (): RuntimeProbeState => ({ body: "ready" });\n`),
+      model("runtime-probe", "port.ts", `import type { RuntimeProbeState } from "./state";\nexport const bindRuntimeProbe = (state: RuntimeProbeState) => ({ lifetime: "client-workspace", commitMode: "read-only", acquire: () => Object.freeze({ commit: () => {} }), release: () => {} });\n`),
+      {
+        path: "src/lib/app-views/categories/pure-runtime/procedures/build-model.ts",
+        write: `import { createRuntimeProbeState } from "$model/client/runtime-probe/state";\nexport const buildModel = () => createRuntimeProbeState();\n`
+      }
+    ]
+  },
+  {
+    check: "capability-contract-is-local",
+    subject: "signature",
+    says: "a capability entry cannot collapse its three categories into one bag",
+    names: "contract-probe/api/run/run.ts",
+    changes: [{
+      path: "src/lib/capabilities/contract-probe/api/run/run.ts",
+      write: `export const run = (services: unknown): unknown => services;\n`
+    }]
+  },
+  {
+    check: "capability-adapter-is-exact",
+    subject: "escape",
+    says: "a transformer cannot spread the acquired model collection",
+    names: "smuggle.server.ts",
+    changes: [{
+      path: "src/lib/runtime/server/capabilities/adapters/smuggle.server.ts",
+      write: `export const smuggleAdapter = Object.freeze({\n  models: [] as const,\n  bindings: Object.freeze({ "run": ["store", "read"] as const }),\n  context: () => Object.freeze({}),\n  ports: (models: {}) => Object.freeze({ ...models })\n});\n`
+    }]
+  },
+  {
+    check: "capability-registry-is-bijective",
+    subject: "completeness",
+    says: "a registry record cannot exist without a capability operation",
+    names: "registry.server.ts",
+    changes: [{
+      path: "src/lib/runtime/server/capabilities/registry.server.ts",
+      write: `const missing = () => {};\nexport const capabilityRegistry = Object.freeze({\n  "orphan.operation": Object.freeze({ owner: "orphan", kind: "internal", scope: "system", admit: missing, entry: missing, transformer: missing, models: [], commit: "automatic" })\n});\n`
+    }]
+  },
+  {
+    check: "remote-gateway-is-the-only-crossing",
+    subject: "remote",
+    says: "a capability-local remote module creates a second crossing",
+    names: "gateway-probe/index.remote.ts",
+    changes: [{
+      path: "src/lib/capabilities/gateway-probe/index.remote.ts",
+      write: `export const bypass = async (input: unknown): Promise<unknown> => input;\n`
+    }]
+  },
+  {
+    check: "gateway-releases-every-acquisition",
+    subject: "release",
+    says: "the gateway runner cannot omit finally cleanup",
+    names: "invoke.server.ts",
+    changes: [{
+      path: "src/lib/runtime/server/capabilities/invoke.server.ts",
+      write: `export const invokeCapability = async (adapter: { acquire(): Promise<unknown> }): Promise<unknown> => {\n  const acquired = await adapter.acquire();\n  return acquired;\n};\n`
+    }]
+  },
+  {
+    check: "one-staged-commit-owner",
+    subject: "duplicate",
+    says: "one invocation cannot acquire a model twice",
+    names: "registry.server.ts",
+    changes: [{
+      path: "src/lib/runtime/server/capabilities/registry.server.ts",
+      write: `const missing = () => {};\nexport const capabilityRegistry = Object.freeze({\n  "probe.run": Object.freeze({ owner: "probe", kind: "internal", scope: "system", admit: missing, entry: missing, transformer: missing, models: ["store", "store"], commit: "automatic" })\n});\n`
+    }]
+  },
+  {
+    check: "component-procedures-are-closed",
+    subject: "lifecycle",
+    says: "a pure component procedure cannot acquire a port",
+    names: "pure-lifecycle/procedures/acquire.ts",
+    changes: [{
+      path: "src/lib/app-views/categories/pure-lifecycle/procedures/acquire.ts",
+      write: `type Adapter = { acquire(): unknown };\nexport const acquire = (adapter: Adapter): unknown => adapter.acquire();\n`
+    }]
+  },
+  {
+    check: "effects-are-boundaries",
+    subject: "grammar",
+    says: "an effect cannot contain a domain loop",
+    names: "pure-effect/effects/loop.svelte.ts",
+    changes: [
+      {
+        path: "src/lib/app-views/categories/pure-effect/procedures/step.ts",
+        write: `export const step = (value: number): number => value + 1;\n`
+      },
+      {
+        path: "src/lib/app-views/categories/pure-effect/effects/loop.svelte.ts",
+        write: `export const loop = (): void => { $effect(() => { for (const value of [1, 2]) { void value; } }); };\n`
+      }
+    ]
+  },
+  {
+    check: "pure-generators-produce-the-contract",
+    subject: "closure",
+    says: "the capability generator cannot add a model dependency to production",
+    names: "generation/capabilities/new-procedure.mjs",
+    changes: [{
+      path: "scripts/generation/capabilities/new-procedure.mjs",
+      write: `plan.create(join(directory, procedure), \`import type { StoreState } from "$model/server/store/types";\nexport const run = (context, ports, input) => input;\`);\n`
+    }]
   }
 ];
 
 export const PROOF_MUTATIONS = [
-  MUTATIONS.find(({ check }) => check === "pure-island-import-closure"),
-  MUTATIONS.find(({ check }) => check === "pure-island-has-no-ambient-authority")
+  ...new Map(MUTATIONS.map((mutation) => [mutation.check, mutation])).values()
 ];
