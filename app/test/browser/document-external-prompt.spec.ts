@@ -43,7 +43,7 @@ test("a directly authored document Prompt Block reads one exact uploaded Externa
 
   await page.goto("/app/dev-project", { waitUntil: "networkidle" });
   const tabs = page.getByRole("toolbar", { name: "Open tabs" });
-  await tabs.getByRole("button", { name: "External", exact: true }).click();
+  await tabs.getByRole("button", { name: "External Files", exact: true }).click();
   await page.locator('form.upload-form input[type="file"]').first().setInputFiles({
     name: "document-prompt-evidence.md",
     mimeType: "text/markdown",
@@ -112,9 +112,9 @@ test("a directly authored document Prompt Block reads one exact uploaded Externa
   await expect(inspector.getByRole("button", { name: "Refresh", exact: true })).toBeEnabled();
 
   await evidenceSource.click();
-  const externalTab = tabs.getByRole("button", { name: "External", exact: true });
+  const externalTab = tabs.getByRole("button", { name: "External Files", exact: true });
   await expect(externalTab).toHaveAttribute("aria-current", "page");
-  await expect(page.getByRole("heading", { level: 1, name: "External", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "External Files", exact: true })).toBeVisible();
   await expect(
     page
       .getByRole("complementary", { name: "Inspector" })

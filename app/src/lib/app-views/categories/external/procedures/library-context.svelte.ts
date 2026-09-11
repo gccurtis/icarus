@@ -12,6 +12,7 @@ const KEY = Symbol("external-library");
 export type ExternalLibraryContext = {
   readonly state: ExternalLibraryState;
   readonly view: WorkspaceStateModel;
+  readonly authors: () => readonly string[];
   readonly visibleFiles: () => readonly LibraryExternalFile[];
   readonly directDirectories: () => readonly LibraryExternalDirectory[];
 };

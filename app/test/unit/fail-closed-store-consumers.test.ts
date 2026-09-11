@@ -168,13 +168,13 @@ describe("capability Store consumers", () => {
     );
   });
 
-  test("External Files reserves unavailable for a valid row with a missing reference", () => {
+  test("External Files keeps a valid row visible when its actor no longer resolves", () => {
     const projected = externalFilesIn(
       externalModel(externalFile({ kind: "connector", connectorId: "connectors:gone" })),
       { projectId: "projects:p", userId: "users:u", username: "Uma" }
     );
-    assert.deepEqual(projected.files, []);
-    assert.equal(projected.unavailable.length, 1);
-    assert.match(projected.unavailable[0].detail, /project connector/);
+    assert.equal(projected.length, 1);
+    assert.equal(projected[0].item.createdByName, "Connector no longer available");
+    assert.equal(projected[0].item.updatedByName, "Connector no longer available");
   });
 });

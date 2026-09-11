@@ -27,9 +27,31 @@ destination (including a task branch already on origin) rather than replacing it
 and do not recreate a worktree each turn.
 The helper records the starting SHA in `.agents/tasks/<task>/worktree.json` and
 creates a handoff. Keep that historical base distinct from the latest target SHA.
-Setup never copies secrets/data/caches or installs dependencies; do not share
-`node_modules` by symlink. Reuse the existing dev/verify helpers inside the new
-worktree. One lead coordinates shared Git metadata and integration.
+Setup links only ignored `app/configuration/local.yaml` from Git's primary
+checkout when available. The primary checkout is the source even if setup runs
+from another linked worktree. The runtime reads this override after the task's
+tracked YAML sections; keep those sections and `overlays/` in the task checkout.
+Never symlink the whole configuration directory or `node_modules`.
+
+For an existing linked worktree, run:
+
+```sh
+node .agents/scripts/worktree.mjs configure
+```
+
+Use `--path <registered-worktree>` when running from another checkout. The command
+does not fetch or change branches. It validates ignored, untracked override paths
+on both sides, reuses a matching link, and refuses an existing file or different
+link without changing it. A missing primary override is reported; retry configure
+after it is available, rather than inventing credentials or creating a dangling
+link. Inspect only link metadata during setup, never secret contents. Do not
+stage/force-add the ignored override or link, log its contents, or modify shared
+configuration through the link for a task-specific setting.
+
+Setup never copies secrets/data/caches or installs dependencies. Install packages
+inside the task worktree. Reuse the existing dev/verify helpers there with its own
+port and isolated test/review data. One lead coordinates shared Git metadata and
+integration.
 
 For ordinary commits, stage exact owned paths, review the staged diff, and publish
 the task branch with an explicit destination when verified:
@@ -116,3 +138,8 @@ rooted there, no pending Git operations or hidden index flags, and no
 ignored/untracked data. It never force-removes or deletes the branch.
 Do not bypass a refusal: retain the worktree until its exact owned artifacts and
 processes are safely handled. Never delete another agent's data to make it pass.
+An ignored local-configuration symlink also prevents removal. After inspecting
+its exact worktree path and `readlink` target, remove only that symlink with
+`unlink <exact-worktree>/app/configuration/local.yaml`; never remove its resolved
+source or recursively delete the configuration directory. The primary override
+remains available to other worktrees.

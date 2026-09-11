@@ -96,7 +96,7 @@
     {
       panel: "Content surface",
       question: "Which non-editor resources are in this project?",
-      owns: "File/folder upload entry points, latest mixed receipt, Table/Directory toggle, breadcrumbs, search, kind/semantic filters, sorting, virtual folders, file rows, quarantine notice, and empty/error states.",
+      owns: "File/folder upload entry points, latest mixed receipt, Table/Directory toggle, breadcrumbs, search, kind/semantic filters, sorting, virtual folders, file rows, and empty/error states.",
       mustNot: "Render a file editor, decode arbitrary source bodies, put management actions inside every row, or create a tab for a selected item.",
       keys: "external.library"
     },
@@ -123,7 +123,7 @@
     ["Virtual directory", "external-files projection", "path, parent, direct/descendant counts, byte totals, opaque descendant revision token", "No row — refetch"],
     ["Tab identity", "workspace TabRecord", "id external, category external, no resourceId", "Yes"],
     ["Selected subject", "workspace TabView", "focus externalFileId + external.file selection + active Context lens", "Yes"],
-    ["Library query", "external-files capability cache", "all admitted project rows plus unavailable entries and live limits", "No — refetch"],
+    ["Library query", "external-files capability cache", "all admitted project rows and live limits", "No — refetch"],
     ["Inspector edit draft", "instance-owned file/directory state", "rename/move/context drafts, confirmation, pending action, recoverable error", "Never"],
     ["Semantic products", "semantic overlay", "material eligibility, job, profile/native visual facet, optional generated descriptor, generation", "Yes, but derived"],
     ["History event", "activity table via external-files", "immutable project-scoped lifecycle event independent of the current row", "Yes; last 200 read"],
@@ -135,7 +135,7 @@
     ["Ready", "Rows available", "Search, filter, select, upload, and inspect without decoding source bytes in Content."],
     ["Nothing yet", "No managed resources", "Explain the library and offer file or directory upload; reserve Findings as a later kind."],
     ["No matches", "Filters hide all rows", "Keep the library count, expose Clear filters, and do not pretend the project is empty."],
-    ["Unavailable row", "Stored metadata is corrupt", "Report a bounded unavailable count while valid rows remain manageable."],
+    ["Stale display relation", "A related user, task, or connector no longer resolves", "Keep the file visible and replace only the related label with a neutral no-longer-available value."],
     ["Selected file missing", "Row was deleted or access changed", "Clear stale selection, keep the singleton open, and return focus to the inventory."],
     ["Bytes unavailable", "Verified read fails", "Inspector preserves trusted metadata, disables download, and exposes report/recovery state."],
     ["Semantic limited", "Queued, failed, or unsupported", "Inspector describes exact-text state for prose, material state for code/data/image, and has no manual refresh or misleading generated-summary block."],

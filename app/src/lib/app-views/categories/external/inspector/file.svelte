@@ -23,8 +23,7 @@
     externalFileDownloadHref,
     externalFileLibrary,
     externalFileReupload,
-    selectedExternalFileIdIn,
-    unavailableIn
+    selectedExternalFileIdIn
   } from "$app-views/categories/external/procedures";
   import { workspaceState } from "$model/client/workspace-state";
 
@@ -36,7 +35,6 @@
   const readableId = $derived(selectedExternalFileIdIn(selectedId, availableIds));
   const detail = $derived(externalFileDetail(readableId));
   const answer = $derived(detail !== undefined && detail.ready ? detail.current : undefined);
-  const unavailable = $derived(unavailableIn(answer));
   const file = $derived(detailIn(answer, state.now));
   const reupload = externalFileReupload.for("reupload");
   const busy = $derived(fileInspector.isBusy(state, reupload.pending));
@@ -61,12 +59,43 @@
     <PanelBanner title="File unavailable" tone="danger">{detail.error instanceof Error ? detail.error.message : String(detail.error)}</PanelBanner>
   {:else if !detail.ready}
     <PanelSkeleton shape="fields" count={9} />
-  {:else if unavailable}
-    <PanelBanner title="File metadata unavailable" tone="danger">{unavailable.detail}</PanelBanner>
   {:else if file}
     <div class="stack">
+      {#if state.actionError}<PanelBanner title="The file did not change" tone="attention">{state.actionError}</PanelBanner>{/if}
+      {#if state.actionNotice}<PanelBanner title="File updated" tone="intelligence">{state.actionNotice}</PanelBanner>{/if}
+      {#if file.native.state === "missing"}
+        <PanelBanner title="Native bytes are missing" tone="danger">The manager row remains, but download and semantic processing are unavailable.</PanelBanner>
+      {:else if file.native.state === "corrupt"}
+        <PanelBanner title="Native bytes failed verification" tone="danger">{file.native.detail}</PanelBanner>
+      {/if}
+
+      <section class="identity" aria-labelledby="file-name-heading">
+        <div class="section-head"><h3 id="file-name-heading">File</h3><PanelChip>{file.usage.total} {file.usage.total === 1 ? "reference" : "references"}</PanelChip></div>
+        {#if state.editingName}
+          <div class="inline-editor">
+            <Input bind:ref={state.nameInput} bind:value={state.nameDraft} aria-label="File name" maxlength={240} disabled={busy}
+              onkeydown={(event) => fileInspector.editKeydown(state, event, () => fileInspector.commitName(state, view, file), file)} />
+            <Button size="sm" disabled={busy || state.nameDraft.trim() === ""} onclick={() => fileInspector.commitName(state, view, file)}>{state.pending === "rename" ? "Saving…" : "Save"}</Button>
+            <Button variant="ghost" size="icon-sm" aria-label="Cancel rename" onclick={() => fileInspector.cancelEdit(state, file)}><X aria-hidden="true" /></Button>
+          </div>
+        {:else}
+          <button type="button" class="editable-value primary" title="Rename file" onclick={() => fileInspector.startEdit(state, file, reupload.pending, "name")}><span>{file.name}</span><Pencil size={12} aria-hidden="true" /></button>
+        {/if}
+        {#if state.editingPath}
+          <div class="inline-editor">
+            <Input bind:ref={state.pathInput} bind:value={state.pathDraft} aria-label="Destination directory; blank means External Files root" maxlength={512} disabled={busy}
+              placeholder="External Files root" onkeydown={(event) => fileInspector.editKeydown(state, event, () => fileInspector.commitPath(state, view, file), file)} />
+            <Button size="sm" disabled={busy} onclick={() => fileInspector.commitPath(state, view, file)}>{state.pending === "move" ? "Moving…" : "Move"}</Button>
+            <Button variant="ghost" size="icon-sm" aria-label="Cancel move" onclick={() => fileInspector.cancelEdit(state, file)}><X aria-hidden="true" /></Button>
+          </div>
+        {:else}
+          <button type="button" class="editable-value path" title="Double-click to change directory" ondblclick={() => fileInspector.startEdit(state, file, reupload.pending, "path")}><span>{file.relativePath}</span><Pencil size={11} aria-hidden="true" /></button>
+        {/if}
+      </section>
+
+      <div class="divider" aria-hidden="true"></div><FileDetails />
+      <div class="divider" aria-hidden="true"></div>
       <div class="toolbar" role="toolbar" aria-label="File actions">
-        <Button variant="ghost" size="sm" disabled={busy} onclick={() => fileInspector.startEdit(state, file, reupload.pending, "name")}><Pencil aria-hidden="true" /> Rename</Button>
         <form {...reupload} class="reupload-form" enctype="multipart/form-data">
           <input {...reupload.fields.externalFileId.as("hidden", file.id)} />
           <input {...reupload.fields.baseRevision.as("hidden", file.revision)} />
@@ -87,38 +116,6 @@
           onclick={() => fileInspector.askToDelete(state, file)}><Trash2 aria-hidden="true" /> Delete</Button>
       </div>
 
-      {#if state.actionError}<PanelBanner title="The file did not change" tone="attention">{state.actionError}</PanelBanner>{/if}
-      {#if state.actionNotice}<PanelBanner title="File updated" tone="intelligence">{state.actionNotice}</PanelBanner>{/if}
-      {#if file.native.state === "missing"}
-        <PanelBanner title="Native bytes are missing" tone="danger">The manager row remains, but download and semantic processing are unavailable.</PanelBanner>
-      {:else if file.native.state === "corrupt"}
-        <PanelBanner title="Native bytes failed verification" tone="danger">{file.native.detail}</PanelBanner>
-      {/if}
-
-      <section class="identity" aria-labelledby="file-name-heading">
-        <div class="section-head"><h3 id="file-name-heading">File</h3><PanelChip>{file.usage.total} {file.usage.total === 1 ? "reference" : "references"}</PanelChip></div>
-        {#if state.editingName}
-          <div class="inline-editor">
-            <Input bind:ref={state.nameInput} bind:value={state.nameDraft} aria-label="File name" maxlength={240} disabled={busy}
-              onkeydown={(event) => fileInspector.editKeydown(state, event, () => fileInspector.commitName(state, view, file), file)} />
-            <Button size="sm" disabled={busy || state.nameDraft.trim() === ""} onclick={() => fileInspector.commitName(state, view, file)}>{state.pending === "rename" ? "Saving…" : "Save"}</Button>
-            <Button variant="ghost" size="icon-sm" aria-label="Cancel rename" onclick={() => fileInspector.cancelEdit(state, file)}><X aria-hidden="true" /></Button>
-          </div>
-        {:else}
-          <button type="button" class="editable-value primary" title="Double-click to rename" ondblclick={() => fileInspector.startEdit(state, file, reupload.pending, "name")}><span>{file.name}</span><Pencil size={12} aria-hidden="true" /></button>
-        {/if}
-        {#if state.editingPath}
-          <div class="inline-editor">
-            <Input bind:ref={state.pathInput} bind:value={state.pathDraft} aria-label="Destination directory; blank means External root" maxlength={512} disabled={busy}
-              placeholder="External root" onkeydown={(event) => fileInspector.editKeydown(state, event, () => fileInspector.commitPath(state, view, file), file)} />
-            <Button size="sm" disabled={busy} onclick={() => fileInspector.commitPath(state, view, file)}>{state.pending === "move" ? "Moving…" : "Move"}</Button>
-            <Button variant="ghost" size="icon-sm" aria-label="Cancel move" onclick={() => fileInspector.cancelEdit(state, file)}><X aria-hidden="true" /></Button>
-          </div>
-        {:else}
-          <button type="button" class="editable-value path" title="Double-click to change directory" ondblclick={() => fileInspector.startEdit(state, file, reupload.pending, "path")}><span>{file.relativePath}</span><Pencil size={11} aria-hidden="true" /></button>
-        {/if}
-      </section>
-
       {#if state.confirmingDelete}
         <section class="delete-confirm" role="alert" aria-labelledby="delete-file-heading">
           <h3 id="delete-file-heading">Delete {file.name} from this project?</h3>
@@ -130,7 +127,6 @@
         </section>
       {/if}
 
-      <div class="divider" aria-hidden="true"></div><FileDetails />
       {#if file.subkind === "data"}
         <div class="divider" aria-hidden="true"></div>
         <section aria-labelledby="context-heading">
@@ -144,19 +140,19 @@
       <div class="divider" aria-hidden="true"></div><FileReferences />
     </div>
   {:else}
-    <PanelEmpty title="That file is no longer in External." />
+    <PanelEmpty title="That file is no longer in External Files." />
   {/if}
 </Panel>
 
 <style>
-  .panel-heading, .toolbar, .action-link, .section-head, .confirm-actions, .inline-editor, .context-actions { display: flex; align-items: center; }
+  .panel-heading, .action-link, .section-head, .confirm-actions, .inline-editor, .context-actions { display: flex; align-items: center; }
   .panel-heading, .action-link { gap: calc(var(--token-spacing-unit) * 1.5); }
   .stack { display: flex; flex-direction: column; gap: calc(var(--token-spacing-unit) * 3); padding: 0 calc(var(--token-spacing-unit) * 3) calc(var(--token-spacing-unit) * 5); }
   h3, p { margin: 0; }
   h3 { color: var(--token-ink-muted); font-size: var(--token-text-caption); font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }
-  .toolbar { flex-wrap: wrap; gap: calc(var(--token-spacing-unit) * 1); padding-bottom: calc(var(--token-spacing-unit) * 2); border-bottom: 1px solid var(--token-border-subtle); }
+  .toolbar { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: center; gap: calc(var(--token-spacing-unit) * 1); }
   .reupload-form { display: contents; }
-  .action-link { min-height: calc(var(--token-spacing-unit) * 8); cursor: pointer; padding-inline: calc(var(--token-spacing-unit) * 2.5); border-radius: var(--token-radius-control); color: var(--token-ink-secondary); font-size: var(--token-text-caption); }
+  .action-link { justify-content: center; min-width: 0; min-height: calc(var(--token-spacing-unit) * 8); cursor: pointer; padding-inline: calc(var(--token-spacing-unit) * 2.5); border-radius: var(--token-radius-control); color: var(--token-ink-secondary); font-size: var(--token-text-caption); white-space: nowrap; }
   .action-link:hover { background: var(--token-surface-panel-hover); color: var(--token-ink-primary); }
   .action-link.disabled { cursor: not-allowed; opacity: .5; }
   .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }

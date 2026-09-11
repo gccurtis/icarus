@@ -5,6 +5,7 @@ import type {
   ExternalFileLibraryItem,
   ReadExternalFileLibraryResult
 } from "$capabilities/external-files/index.remote";
+import { updatedTime } from "$app-views/categories/external/procedures/updated-time";
 
 export type LibraryExternalFile = ExternalFileLibraryItem & {
   readonly updated: string;
@@ -75,7 +76,7 @@ export const semanticPresentation = (
 
 const project = (row: ExternalFileLibraryItem, now: number): LibraryExternalFile => ({
   ...row,
-  updated: relativeTime(row.updatedAt, now),
+  updated: updatedTime(row.updatedAt, now),
   sizeLabel: bytesLabel(row.size),
   ...semanticPresentation(row)
 });

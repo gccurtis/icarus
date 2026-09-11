@@ -65,6 +65,10 @@ skipped live-provider tests as passing.
 - Native-file directory and reset/cleanup responsibility: none selected
 - Worktree lease / active command: none recorded; check status before running
 - Human review URL and data notes: none recorded
+- Local configuration: record the `start`/`configure` result for the ignored
+  `app/configuration/local.yaml` symlink from Git's primary checkout, or its
+  reported absence. Tracked YAML stays in this worktree. Never record secrets,
+  edit shared settings through the link, or remove its source during cleanup.
 
 ## Risks and next executable step
 

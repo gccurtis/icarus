@@ -89,7 +89,6 @@
           </ul>
         {/if}
       </section>
-      <p class="note">Directories are a view over file paths. Renaming or moving one atomically rewrites every descendant file path; no native server directory is created.</p>
     </div>
   {/if}
 </Panel>
@@ -105,7 +104,7 @@
   .editable-name { width: 100%; justify-content: space-between; gap: calc(var(--token-spacing-unit) * 2); margin-top: calc(var(--token-spacing-unit) * 2); color: var(--token-ink-primary); font-size: var(--token-text-body-sm); font-weight: 600; text-align: start; }
   .editable-name :global(svg) { flex: none; opacity: 0; }
   .editable-name:hover :global(svg), .editable-name:focus-visible :global(svg) { opacity: 1; }
-  .path, .empty, .note { color: var(--token-ink-muted); font-size: var(--token-text-caption); line-height: var(--token-text-caption-leading); }
+  .path, .empty { color: var(--token-ink-muted); font-size: var(--token-text-caption); line-height: var(--token-text-caption-leading); }
   .path { margin-top: calc(var(--token-spacing-unit) * 1); font-family: var(--token-font-mono); }
   .divider { border-top: 1px solid var(--token-border-subtle); }
   dl { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: calc(var(--token-spacing-unit) * 1.5) calc(var(--token-spacing-unit) * 2); margin-top: calc(var(--token-spacing-unit) * 2); color: var(--token-ink-muted); font-size: var(--token-text-caption); }
@@ -116,5 +115,4 @@
   .children span { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .children small { flex: none; color: var(--token-ink-muted); }
   .empty { margin-top: calc(var(--token-spacing-unit) * 2); }
-  .note { padding: calc(var(--token-spacing-unit) * 2); border: 1px dashed var(--token-border-subtle); border-radius: var(--token-radius-control); }
 </style>

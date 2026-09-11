@@ -51,7 +51,7 @@ test("duplicate External file names are selected and restored by exact relative 
     await writeFile(join(folder, "south", "inspection.md"), "# South inspection\n\nFan delay observed.\n");
 
     await page.goto("/app/dev-project", { waitUntil: "networkidle" });
-    await tabs(page).getByRole("button", { name: "External", exact: true }).click();
+    await tabs(page).getByRole("button", { name: "External Files", exact: true }).click();
     await page.locator('form.upload-form input[type="file"]').nth(1).setInputFiles(folder);
     await page.getByRole("button", { name: "Upload folder", exact: true }).click();
     await expect(page.getByText("2 uploaded · 0 already present · 0 rejected."))
@@ -93,7 +93,7 @@ test("an agent task inherits one exact uploaded External resource and protects i
   test.setTimeout(180_000);
 
   await page.goto("/app/dev-project", { waitUntil: "networkidle" });
-  await tabs(page).getByRole("button", { name: "External", exact: true }).click();
+  await tabs(page).getByRole("button", { name: "External Files", exact: true }).click();
   await page.locator('form.upload-form input[type="file"]').first().setInputFiles({
     name: "agent-evidence.md",
     mimeType: "text/markdown",
@@ -171,7 +171,7 @@ test("an agent task inherits one exact uploaded External resource and protects i
     .getByRole("listitem").filter({ hasText: /agent-evidence\.md/i }))
     .toContainText(/agent-evidence\.md/i);
 
-  await tabs(page).getByRole("button", { name: "External", exact: true }).click();
+  await tabs(page).getByRole("button", { name: "External Files", exact: true }).click();
   await page.getByRole("table").getByRole("button", { name: "agent-evidence.md", exact: true }).click();
   await expect(page.getByRole("complementary", { name: "Inspector" }).getByRole("button", {
     name: "Delete",

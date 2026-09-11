@@ -161,6 +161,14 @@ test("wires the six production panels to scoped project data", async ({ page }) 
   await expect(context.getByRole("heading", { name: "History", exact: true })).toBeVisible();
   await expect(context.getByText("Addressed to you", { exact: true })).toHaveCount(0);
   await expect(context.getByText(/mentioned you/i)).toHaveCount(0);
+  const editedBrief = context.getByRole("button", { name: /Edited: Winter readiness brief/ });
+  await expect(editedBrief).toBeVisible();
+  await context.getByLabel("History period", { exact: true }).click();
+  await page.getByRole("option", { name: "Today", exact: true }).click();
+  await expect(editedBrief).toHaveCount(0);
+  await context.getByLabel("History period", { exact: true }).click();
+  await page.getByRole("option", { name: "All time", exact: true }).click();
+  await expect(editedBrief).toBeVisible();
   await context.getByPlaceholder("Search history").fill("substation");
   await expect(
     context.getByRole("heading", { name: "Results", exact: true }).locator("..").getByText("3", { exact: true })

@@ -49,7 +49,7 @@ old readers, or compatibility paths.
 
 | Procedure | Contract |
 | --- | --- |
-| `readExternalFileLibrary` | Strict project inventory, virtual-directory projection, pre-indexed semantic status, current limits, and quarantined-row count |
+| `readExternalFileLibrary` | Strict project inventory, virtual-directory projection, pre-indexed semantic status, and current limits |
 | `readExternalFile` | One project-owned admitted row plus verified availability, typed References, and conditional semantic projection |
 | `readExternalFileHistory` | Newest 200 durable project lifecycle events, including deleted files |
 | `uploadExternalFiles` | Mixed-result bounded file/folder ingestion; each file independently atomic |

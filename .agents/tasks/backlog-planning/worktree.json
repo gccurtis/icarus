@@ -1,0 +1,7 @@
+{
+  "task": "backlog-planning",
+  "branch": "work/backlog-planning",
+  "baseRef": "origin/main",
+  "baseSha": "c2505f076c05953cdaedd5d195ee95632eefdf79",
+  "createdAt": "2026-09-11T01:28:18.462Z"
+}

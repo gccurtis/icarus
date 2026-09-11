@@ -140,8 +140,9 @@ Admission checks all of these invariants:
 10. Dataset context is trimmed NFC, non-empty when present, NUL-free, and at
     most 4,000 characters.
 
-Malformed rows are quarantined from library projections and fail strict startup
-admission. There are no `legacyDirectory` reads, `data/materials` fallbacks,
+Malformed rows fail strict startup admission. A valid file remains visible when
+an optional display relation no longer resolves, using a neutral unavailable
+label for that relation. There are no `legacyDirectory` reads, `data/materials` fallbacks,
 text aliases, optional required values, workspace adoption, or migration paths.
 
 ## 4. Ingestion

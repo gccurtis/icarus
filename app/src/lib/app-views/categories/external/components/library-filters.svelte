@@ -8,7 +8,9 @@
   import { KIND_LABEL } from "$app-views/categories/external/procedures/library-view";
   import { toggleLibraryDirection } from "$app-views/categories/external/procedures/toggle-library-direction";
 
-  const { state } = externalLibraryContext();
+  const context = externalLibraryContext();
+  const { state } = context;
+  const authors = $derived(context.authors());
   const sorts = [
     { value: "updated", label: "Updated" },
     { value: "name", label: "Name" },
@@ -23,6 +25,10 @@
   <select class="filter-control" bind:value={state.kind} aria-label="File kind">
     <option value="all">All kinds</option>
     {#each kinds as option (option)}<option value={option}>{KIND_LABEL[option]}</option>{/each}
+  </select>
+  <select class="filter-control" bind:value={state.author} aria-label="Author" title="Last updated by">
+    <option value="">All authors</option>
+    {#each authors as author (author)}<option value={author}>{author}</option>{/each}
   </select>
   <select class="filter-control" bind:value={state.semantic} aria-label="Semantic status">
     <option value="all">All semantic states</option>

@@ -44,6 +44,7 @@ export const visibleExternalFiles = (
   const query = state.search.trim().toLocaleLowerCase();
   const filtered = files
     .filter((row) => state.kind === "all" || row.subkind === state.kind)
+    .filter((row) => state.author === "" || row.updatedByName === state.author)
     .filter((row) => matchesSemantic(state, row))
     .filter((row) => query === "" ||
       `${row.name} ${row.originalName} ${row.relativePath} ${row.mediaType}`
@@ -69,7 +70,7 @@ export const libraryBreadcrumbs = (
 ): readonly { readonly label: string; readonly path: string }[] => {
   const segments = currentDirectory.split("/").filter(Boolean);
   return [
-    { label: "External", path: "" },
+    { label: "External Files", path: "" },
     ...segments.map((label, index) => ({
       label,
       path: segments.slice(0, index + 1).join("/")
@@ -78,7 +79,15 @@ export const libraryBreadcrumbs = (
 };
 
 export const libraryFiltersActive = (state: ExternalLibraryState): boolean =>
-  state.search.trim() !== "" || state.kind !== "all" || state.semantic !== "all";
+  state.search.trim() !== "" || state.kind !== "all" || state.semantic !== "all" || state.author !== "";
+
+export const externalAuthors = (
+  files: readonly LibraryExternalFile[],
+  selected: string
+): readonly string[] => [...new Set([
+  ...files.map((file) => file.updatedByName),
+  ...(selected === "" ? [] : [selected])
+])].sort((left, right) => left.localeCompare(right));
 
 export const externalFileIsSelected = (view: WorkspaceStateModel, id: string): boolean =>
   view.selection?.kind === "external-file" && view.selection.id === id;

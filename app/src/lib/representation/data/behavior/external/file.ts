@@ -128,7 +128,7 @@ export const externalDirectoryIn = (relativePath: string): string => {
 
 export const externalDirectoryNameIn = (path: string): string => {
   const normalized = normalizeExternalDirectoryPath(path);
-  return normalized === "" ? "External" : normalized.split("/").at(-1)!;
+  return normalized === "" ? "External Files" : normalized.split("/").at(-1)!;
 };
 
 export const externalDirectoryParentIn = (path: string): string | null => {

@@ -109,7 +109,6 @@ export type {
   ExternalFileOriginView,
   ExternalFileSemanticStatus,
   ExternalFilesLimits,
-  ExternalFileUnavailable,
   ExternalFileUsage,
   ExternalFileUsageItem,
   ExternalFileUsageKind,

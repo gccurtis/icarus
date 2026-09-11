@@ -24,6 +24,7 @@
   import { provideExternalLibraryContext } from "$app-views/categories/external/procedures/library-context.svelte";
   import {
     directExternalDirectories,
+    externalAuthors,
     libraryBreadcrumbs,
     libraryFiltersActive,
     visibleExternalFiles
@@ -37,6 +38,7 @@
   const library = externalFileLibrary();
   const answer = $derived(library.ready ? library.current : undefined);
   const files = $derived(externalFilesIn(answer, state.now));
+  const authors = $derived(externalAuthors(files, state.author));
   const directories = $derived(externalDirectoriesIn(answer));
   const visibleFiles = $derived(visibleExternalFiles(state, files));
   const directDirectories = $derived(directExternalDirectories(state, directories));
@@ -48,6 +50,7 @@
   provideExternalLibraryContext({
     state,
     view,
+    authors: () => authors,
     visibleFiles: () => visibleFiles,
     directDirectories: () => directDirectories
   });
@@ -61,7 +64,7 @@
 
 <ScreenSurface>
   <div class="library-stack">
-    <ScreenHeader title="External">
+    <ScreenHeader title="External Files">
       {#snippet actions()}<Uploads />{/snippet}
     </ScreenHeader>
     <LibraryControls />
@@ -80,23 +83,20 @@
 
     {#if library.error}
       <div class="remote-state">
-        <ScreenEmpty title="The External library could not be loaded">
+        <ScreenEmpty title="The External Files library could not be loaded">
           {library.error instanceof Error ? library.error.message : String(library.error)}
         </ScreenEmpty>
         <Button variant="outline" size="sm" onclick={() => library.refresh()}>Retry library</Button>
       </div>
     {:else if !library.ready}
-      <ScreenEmpty title="Loading External">Reading project-owned file metadata.</ScreenEmpty>
+      <ScreenEmpty title="Loading External Files">Reading project-owned file metadata.</ScreenEmpty>
     {:else}
-      {#if library.current.unavailable.length > 0}
-        <ScreenNote tone="gap">{library.current.unavailable.length} represented file {library.current.unavailable.length === 1 ? "row is" : "rows are"} hidden because its metadata did not pass admission.</ScreenNote>
-      {/if}
-      <ScreenGroup label={state.mode === "table" ? "All files" : (current?.name ?? "External")}
+      <ScreenGroup label={state.mode === "table" ? "All files" : (current?.name ?? "External Files")}
         count={String(state.mode === "table" ? files.length : (current?.descendantFileCount ?? files.length))}>
         <div class="table-stack">
           <LibraryFilters />
           {#if state.mode === "directory"}
-            <nav class="breadcrumbs" aria-label="External directory">
+            <nav class="breadcrumbs" aria-label="External Files directory">
               {#each crumbs as crumb, index (crumb.path)}
                 {#if index > 0}<ChevronRight size={12} aria-hidden="true" />{/if}
                 <button type="button" aria-current={crumb.path === state.currentDirectory ? "page" : undefined}
@@ -108,7 +108,7 @@
             <ScreenEmpty kind={filtersActive ? "no-matches" : "nothing-yet"}
               title={filtersActive ? "No file matches" : "No external files yet"}
               onclear={filtersActive ? () => clearLibraryFilters(state) : undefined}>
-              {filtersActive ? "Try another name, kind, or semantic state." : "Choose files or a folder above. Unsupported formats remain safely stored and downloadable."}
+              {filtersActive ? "Try another name, author, kind, or semantic state." : "Choose files or a folder above. Unsupported formats remain safely stored and downloadable."}
             </ScreenEmpty>
           {:else if state.mode === "table"}
             <FileTable />

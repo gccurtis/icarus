@@ -36,17 +36,9 @@ export type ExternalDirectoryItem = {
   readonly revisionToken: string;
 };
 
-export type ExternalFileUnavailable = {
-  readonly unavailable: true;
-  readonly externalFileId: string;
-  readonly reason: "corrupt";
-  readonly detail: string;
-};
-
 export type ReadExternalFileLibraryResult = {
   readonly files: readonly ExternalFileLibraryItem[];
   readonly directories: readonly ExternalDirectoryItem[];
-  readonly unavailable: readonly ExternalFileUnavailable[];
   readonly limits: ExternalFilesLimits;
 };
 
@@ -115,4 +107,4 @@ export type ExternalFileDetail = ExternalFileLibraryItem & {
 };
 
 export type ReadExternalFileInput = { readonly externalFileId: string };
-export type ReadExternalFileResult = ExternalFileDetail | ExternalFileUnavailable | null;
+export type ReadExternalFileResult = ExternalFileDetail | null;

@@ -24,8 +24,8 @@ describe("External replacement and authored context", () => {
     assert.notEqual(outcome.status, "rejected");
     if (outcome.status === "rejected") return;
     const before = await readExternalFile({ externalFileId: outcome.externalFileId });
-    assert.ok(before !== null && !("unavailable" in before));
-    if (before === null || "unavailable" in before) return;
+    assert.ok(before !== null);
+    if (before === null) return;
 
     const replaced = await reuploadExternalFile({
       id: "reupload",
@@ -42,8 +42,8 @@ describe("External replacement and authored context", () => {
     assert.equal(replaced.previousBlob, "removed");
     assert.equal(replaced.subkind, "code");
     const after = await readExternalFile({ externalFileId: before.id });
-    assert.ok(after !== null && !("unavailable" in after));
-    if (after === null || "unavailable" in after) return;
+    assert.ok(after !== null);
+    if (after === null) return;
     assert.equal(after.name, "module.ts");
     assert.equal(after.relativePath, "src/module.ts");
     assert.notEqual(after.hash, before.hash);
@@ -65,8 +65,8 @@ describe("External replacement and authored context", () => {
     assert.notEqual(outcome.status, "rejected");
     if (outcome.status === "rejected") return;
     const before = await readExternalFile({ externalFileId: outcome.externalFileId });
-    assert.ok(before !== null && !("unavailable" in before));
-    if (before === null || "unavailable" in before) return;
+    assert.ok(before !== null);
+    if (before === null) return;
     const changed = await updateExternalFileContext({
       externalFileId: before.id,
       baseRevision: before.revision,
@@ -74,8 +74,8 @@ describe("External replacement and authored context", () => {
     });
     assert.equal(changed.accepted, true);
     const after = await readExternalFile({ externalFileId: before.id });
-    assert.ok(after !== null && !("unavailable" in after));
-    if (after === null || "unavailable" in after) return;
+    assert.ok(after !== null);
+    if (after === null) return;
     assert.equal(after.semanticContext, "Monthly invoiced value in US dollars; test accounts are excluded.");
     assert.equal((await readExternalFileHistory()).entries[0].event, "context-updated");
   });
@@ -120,8 +120,8 @@ describe("External replacement and authored context", () => {
     });
     assert.equal(replaced.accepted, true);
     const after = await readExternalFile({ externalFileId: outcome.externalFileId });
-    assert.ok(after !== null && !("unavailable" in after));
-    if (after === null || "unavailable" in after) return;
+    assert.ok(after !== null);
+    if (after === null) return;
     assert.equal(after.subkind, "text");
     assert.equal(after.semanticContext, undefined);
   });

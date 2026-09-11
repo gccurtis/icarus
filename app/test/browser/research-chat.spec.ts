@@ -206,7 +206,7 @@ test("a deterministic research turn reads only one selected uploaded External fi
 
     await page.goto("/app/dev-project", { waitUntil: "networkidle" });
     const tabs = page.getByRole("toolbar", { name: "Open tabs" });
-    await tabs.getByRole("button", { name: "External", exact: true }).click();
+    await tabs.getByRole("button", { name: "External Files", exact: true }).click();
     await page.locator('form.upload-form input[type="file"]').nth(1).setInputFiles(folder);
     await page.getByRole("button", { name: "Upload folder", exact: true }).click();
     await expect(page.getByText("2 uploaded · 0 already present · 0 rejected."))

@@ -6,7 +6,7 @@ export const KIND_LABEL: Record<ResourceKind, string> = {
   spreadsheet: "Spreadsheet",
   research: "Research",
   analysis: "Analysis",
-  file: "External",
+  file: "External file",
   finding: "Finding"
 };
 
@@ -16,6 +16,6 @@ export const KIND_PLURAL: Record<ResourceKind, string> = {
   spreadsheet: "Spreadsheets",
   research: "Research",
   analysis: "Analyses",
-  file: "External",
+  file: "External Files",
   finding: "Findings"
 };

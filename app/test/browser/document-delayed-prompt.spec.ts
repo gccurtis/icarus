@@ -23,7 +23,7 @@ test("a document adopts a delayed publication after its initiating request is lo
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto("/app/dev-project", { waitUntil: "networkidle" });
   const tabs = page.getByRole("toolbar", { name: "Open tabs" });
-  await tabs.getByRole("button", { name: "External", exact: true }).click();
+  await tabs.getByRole("button", { name: "External Files", exact: true }).click();
   await page.locator('form.upload-form input[type="file"]').first().setInputFiles({
     name: "delayed-transfer-evidence.md",
     mimeType: "text/markdown",

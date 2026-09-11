@@ -9,13 +9,12 @@ import type { ReadExternalFileLibraryResult } from "$capabilities/external-files
 export const readExternalFileLibrary = async (): Promise<ReadExternalFileLibraryResult> => {
   const scope = await requireScope();
   const model = serverModel();
-  const { files, unavailable } = externalFilesIn(model, scope);
+  const files = externalFilesIn(model, scope);
   return {
     files: files
       .map(({ item }) => item)
       .sort((left, right) => right.updatedAt - left.updatedAt || left.name.localeCompare(right.name)),
     directories: externalDirectoriesIn(files),
-    unavailable,
     limits: externalFilesLimits(model.configuration)
   };
 };

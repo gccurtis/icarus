@@ -8,12 +8,9 @@ export const detailIn = (
   answer: ReadExternalFileResult | undefined,
   now: number
 ): LibraryExternalFileDetail | undefined => {
-  if (answer === null || answer === undefined || "unavailable" in answer) return undefined;
+  if (answer === null || answer === undefined) return undefined;
   return { ...answer, ...presentExternalFile(answer, now) };
 };
-
-export const unavailableIn = (answer: ReadExternalFileResult | undefined) =>
-  answer !== null && answer !== undefined && "unavailable" in answer ? answer : undefined;
 
 export const selectedExternalFileIdIn = (
   selectedId: string | undefined,
