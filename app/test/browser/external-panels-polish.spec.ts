@@ -82,8 +82,9 @@ test("External Files history searches recent events and distinguishes empty and 
   await search.fill("");
   await expect(entries).toHaveCount(2);
   await expect(context.getByText("2 of 2", { exact: true })).toBeVisible();
-  const actorLine = await entries.first().locator("div > span").innerText();
-  await search.fill(actorLine.split(" · ").slice(1).join(" · "));
+  await expect(entries.first().locator(".meta > span").first()).toHaveText(/^(now|\d+[mhd])$/);
+  const actorName = await entries.first().getByRole("button", { name: "Ana Duarte", exact: true }).innerText();
+  await search.fill(actorName);
   await expect(entries).toHaveCount(2);
   await search.fill("text/markdown");
   await expect(entries).toHaveCount(2);

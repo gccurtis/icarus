@@ -131,13 +131,26 @@ const isStoredExternalSelection = (
     : selection.kind === "external-directory" && currentExternalDirectory(selection.id);
 };
 
-export const isStoredExternalInspection = (
+const isStoredExternalOwnedInspection = (
   inspected: unknown,
   selection: unknown
 ): boolean => {
   if (inspected === "empty") return selection === null;
   return (inspected === "external.file" || inspected === "external.directory") &&
     isStoredExternalSelection(selection, inspected);
+};
+
+/** External-specific lenses stay nominal; shared lenses use the ordinary selection contract. */
+export const isStoredExternalInspection = (
+  inspected: unknown,
+  selection: unknown
+): boolean => {
+  if (inspected === "empty") return selection === null;
+  if (typeof inspected !== "string" || !inspectorForCategory("external", inspected)) return false;
+  if (inspected === "external.file" || inspected === "external.directory") {
+    return isStoredExternalOwnedInspection(inspected, selection);
+  }
+  return selection === null || isStoredSelection(selection);
 };
 
 export const isStoredSelection = (value: unknown): value is Selection => {
@@ -213,9 +226,10 @@ const storedLanding = (
   ) return false;
   if (landing.inspected === "empty") return landing.selection === null;
   if (!inspectorForCategory(owner, landing.inspected)) return false;
-  if (owner === "external") {
-    return isStoredExternalInspection(landing.inspected, landing.selection);
-  }
+  if (owner === "external") return isStoredExternalInspection(
+    landing.inspected,
+    landing.selection
+  );
   return landing.selection === null || isStoredSelection(landing.selection);
 };
 

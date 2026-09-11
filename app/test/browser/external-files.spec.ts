@@ -167,6 +167,37 @@ test("External manages rename, move, re-upload, download, History, and deletion 
     "Uploaded live-code.ts"
   ]);
 
+  const historyFile = context.getByRole("button", {
+    name: "Inspect file managed-code.ts",
+    exact: true
+  }).first();
+  const actor = context.getByRole("button", { name: "Ana Duarte", exact: true }).first();
+  await expect(historyFile).toBeVisible();
+  await expect(actor).toBeVisible();
+  await actor.hover();
+  await expect(actor).toHaveCSS("text-decoration-line", "underline");
+
+  await page.getByRole("group", { name: "Library view", exact: true })
+    .getByRole("radio", { name: "Directory", exact: true }).click();
+  const breadcrumbs = page.getByRole("navigation", { name: "External Files directory" });
+  await breadcrumbs.getByRole("button", { name: "External Files", exact: true }).click();
+  await page.getByRole("table").getByRole("button", { name: "validation", exact: true }).click();
+  await expect(inspector).toHaveAttribute("data-inspected", "external.directory");
+
+  await historyFile.click();
+  await expect(breadcrumbs.getByRole("button", { name: "validation", exact: true }))
+    .toHaveAttribute("aria-current", "page");
+  await expect(table.getByRole("row").filter({
+    has: page.getByRole("button", { name: "managed-code.ts", exact: true })
+  })).toHaveAttribute("aria-selected", "true");
+  await expect(inspector).toHaveAttribute("data-inspected", "external.file");
+
+  await actor.click();
+  await expect(inspector).toHaveAttribute("data-inspected", "general.person");
+  await expect(inspector.getByRole("heading", { name: "Ana Duarte", exact: true })).toBeVisible();
+  await historyFile.click();
+  await expect(inspector).toHaveAttribute("data-inspected", "external.file");
+
   await inspector.getByRole("button", { name: "Delete", exact: true }).click();
   await expect(inspector.getByRole("heading", { name: "Delete managed-code.ts from this project?" })).toBeVisible();
   await inspector.getByRole("button", { name: "Delete file", exact: true }).click();

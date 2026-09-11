@@ -1,5 +1,6 @@
 import { onMount } from "svelte";
 
+import { externalDirectoryIn } from "$representation/data/behavior/external/file";
 import type { WorkspaceStateModel } from "$model/client/workspace-state";
 import type { ExternalLibraryState } from "$app-views/categories/external/content/library.state.svelte";
 import type {
@@ -21,6 +22,9 @@ export const keepExternalLibraryCurrent = (
   view: WorkspaceStateModel,
   input: Inputs
 ): void => {
+  let observedSelection = view.selection;
+  let observedFocus: string | undefined;
+
   onMount(() => {
     const timer = setInterval(() => (state.now = Date.now()), 60_000);
     return () => clearInterval(timer);
@@ -35,9 +39,24 @@ export const keepExternalLibraryCurrent = (
 
   $effect(() => {
     const focus = view.active.focus;
+    const selection = view.selection;
+    const selectionChanged = selection !== observedSelection;
+    const focusChanged = focus !== observedFocus;
+    observedSelection = selection;
+    observedFocus = focus;
     if (!input.ready() || focus === undefined) return;
-    if (view.selection?.kind === "external-directory") return;
-    if (view.selection?.kind === "external-file" && view.selection.id === focus) return;
-    if (input.files().some((row) => row.id === focus)) inspectExternalFile(view, focus);
+    const file = input.files().find((row) => row.id === focus);
+    if (file === undefined) return;
+    if (
+      state.mode === "directory" &&
+      selectionChanged &&
+      selection?.kind === "external-file" &&
+      selection.id === focus
+    ) {
+      setLibraryDirectory(state, externalDirectoryIn(file.relativePath));
+    }
+    if (selection?.kind === "external-directory") return;
+    if (selection?.kind === "external-file" && selection.id === focus) return;
+    if (focusChanged) inspectExternalFile(view, focus);
   });
 };

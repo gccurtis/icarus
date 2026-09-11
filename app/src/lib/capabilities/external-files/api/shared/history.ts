@@ -115,6 +115,7 @@ const historyEntry = (
     !isStoredRowId(row._id, "activity") ||
     !isStoredTime(row._creationTime) ||
     !isStoredActor(row.actor) ||
+    row.actor.kind !== "user" ||
     !isStoredText(row.actorLabel) ||
     row.actorLabel.length === 0 ||
     !EVENTS.includes(row.verb as ExternalFileHistoryEvent)
@@ -148,6 +149,7 @@ const historyEntry = (
     event: row.verb as ExternalFileHistoryEvent,
     name: target.label,
     relativePath,
+    actorId: row.actor.userId,
     actorName: row.actorLabel,
     at: row._creationTime,
     ...(row.detail === undefined ? {} : { detail: row.detail })

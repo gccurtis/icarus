@@ -51,6 +51,7 @@ describe("External file history current shape", () => {
       externalFileId: "externalFiles:one",
       name: "readme",
       relativePath: "folder/readme",
+      actorId: "users:author",
       actorName: "Author"
     }]);
   });

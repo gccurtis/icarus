@@ -56,6 +56,7 @@ export type ExternalFileHistoryEntry = {
   readonly event: ExternalFileHistoryEvent;
   readonly name: string;
   readonly relativePath: string;
+  readonly actorId: string;
   readonly actorName: string;
   readonly at: number;
   readonly detail?: string;

@@ -41,6 +41,11 @@ describe("External workspace identity", () => {
       inspected: "document-editor.image",
       selection: { kind: "external-file", id: "externalFiles:one" }
     }, "external")).toBe(false);
+    expect(isStoredTabViewFor({
+      ...view,
+      inspected: "general.person",
+      selection: { kind: "person", id: "users:author" }
+    }, "external")).toBe(true);
   });
 
   it("rejects a bare file id in an External inspect operation", () => {
@@ -92,6 +97,13 @@ describe("External workspace identity", () => {
       now: "empty",
       selection: file
     })).toBe(false);
+    expect(isStoredWorkspaceOp({
+      ...base,
+      was: "external.file",
+      wasSelection: file,
+      now: "general.person",
+      selection: { kind: "person", id: "users:author" }
+    })).toBe(true);
 
     expect(isStoredWorkspaceOp({
       ...base,
