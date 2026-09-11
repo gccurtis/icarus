@@ -24,7 +24,9 @@ export function repository(t) {
     recursive: true, filter: (path) => !path.startsWith(join(root, '.agents/scripts/test'))
   });
   writeFileSync(join(primary, '.agents/.gitignore'), 'runtime/\n');
-  writeFileSync(join(primary, '.gitignore'), '.env\napp/node_modules/\ndata/\n');
+  writeFileSync(join(primary, '.gitignore'), '.env\napp/node_modules/\ndata/\napp/configuration/local.yaml\n');
+  mkdirSync(join(primary, 'app/configuration'), { recursive: true });
+  writeFileSync(join(primary, 'app/configuration/dev.yaml'), 'development:\n  username: fixture\n');
   writeFileSync(join(primary, 'AGENTS.md'), '# Test repository\n');
   commit(primary, 'Initial fixture');
   git(container, 'init', '--bare', '--initial-branch=main', origin);

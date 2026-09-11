@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, readlinkSync, unlinkSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { spawn } from 'node:child_process';
 import { once } from 'node:events';
@@ -81,6 +81,22 @@ test('cleanup rejects hidden tracked edits even when ordinary Git status reports
     assert.throws(() => removeWorktree(fixture.primary, flag, flag), /hidden changes cannot be ruled out/u);
     assert.equal(readFileSync(join(task.path, 'AGENTS.md'), 'utf8'), 'hidden local work');
   }
+});
+
+test('cleanup refuses the ignored configuration symlink and leaves its source intact', (t) => {
+  const fixture = repository(t);
+  const source = join(fixture.primary, 'app/configuration/local.yaml');
+  writeFileSync(source, 'fixture shared configuration');
+  const task = taskOf(fixture);
+  const link = join(task.path, 'app/configuration/local.yaml');
+  commit(task.path);
+  integrate(fixture, task);
+  assert.throws(() => removeWorktree(fixture.primary, 'test-task', 'test-task'), /ignored files/u);
+  assert.equal(readlinkSync(link), source);
+  assert.equal(readFileSync(source, 'utf8'), 'fixture shared configuration');
+  unlinkSync(link);
+  assert.equal(removeWorktree(fixture.primary, 'test-task', 'test-task').removed, task.path);
+  assert.equal(readFileSync(source, 'utf8'), 'fixture shared configuration');
 });
 
 test('cleanup preserves a pending empty cherry-pick and refuses an index lock', (t) => {

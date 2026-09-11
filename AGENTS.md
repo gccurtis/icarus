@@ -38,8 +38,18 @@ tracking `main`, and records the base and handoff. Its default destination is a
 sibling `<primary-repo-name>-worktrees/<task>`; `--path` chooses an absolute path.
 It refuses existing local/remote task branches and destinations. If setup fails
 partway, inspect the reported branch/worktree instead of retrying destructively.
-It does not copy credentials, development data, dependencies, or caches, or
-install packages.
+It links only the ignored `app/configuration/local.yaml` from Git's primary
+checkout when present, even when started from another linked worktree. Tracked
+configuration stays in the task checkout; never symlink the whole configuration
+directory. The helper reads no credential contents and does not copy credentials,
+development data, dependencies, or caches, or install packages.
+For an existing worktree, run `worktree.mjs configure` there (or use
+`--path <registered-worktree>` from another checkout). This safely reuses the same
+link, refuses existing local files/different links, and reports a missing primary
+override without creating a dangling link. Treat the source as shared: do not edit
+through the link for task-specific settings. Use tracked configuration changes or
+the existing explicit process overlays for those. Never stage or force-add the
+ignored local override or its symlink, and never put its contents in logs/handoffs.
 Install dependencies within the worktree when needed; pnpm may reuse its package
 store, but do not symlink another worktree's `node_modules`.
 
@@ -116,6 +126,7 @@ node .agents/scripts/status.mjs
 node .agents/scripts/worktree.mjs start my-task
 node .agents/scripts/worktree.mjs status
 node .agents/scripts/worktree.mjs ready
+node .agents/scripts/worktree.mjs configure
 node .agents/scripts/handoff.mjs my-task
 node .agents/scripts/dev.mjs --port 3123 --store disposable
 node .agents/scripts/dev.mjs --port 3123 --store development
@@ -189,7 +200,11 @@ explicit: `worktree.mjs remove <task> --confirm <task>`. It requires a clean tre
 merged into both local and freshly fetched remote `main`, no worktree/Git leases
 or visible processes rooted there, no pending Git operations or hidden index flags,
 and no ignored/untracked data. Inspect and handle owned local artifacts before
-removal; never bypass these guards with force. Branches are kept.
+removal; never bypass these guards with force. The ignored local-configuration
+symlink also blocks removal. Inspect its exact path with `ls -l` and `readlink`,
+then use `unlink` on only that worktree's `app/configuration/local.yaml` symlink;
+this leaves the primary configuration intact. Never delete the resolved source
+or recursively remove a configuration directory. Branches are kept.
 
 Completion means the requested behavior is implemented and proportionately
 verified. Report what changed, evidence, remaining limitations, and commit/push

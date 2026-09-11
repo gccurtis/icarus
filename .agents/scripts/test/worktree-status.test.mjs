@@ -56,7 +56,7 @@ test('CLI offers only scoped actions and ready has a failing exit code for a non
   const help = cli(fixture.primary, '--help');
   assert.equal(help.status, 0, help.stderr);
   assert.match(help.stdout, /No command merges, rebases, commits, or pushes/u);
-  for (const args of [['merge'], ['start', 'bad/name'], ['status', 'extra'], ['remove', 'test-task', '--path', task.path], ['ready', '--force'], ['status', '--confirm', 'test-task']]) {
+  for (const args of [['merge'], ['start', 'bad/name'], ['status', 'extra'], ['configure', 'extra'], ['configure', '--confirm', 'test-task'], ['remove', 'test-task', '--path', task.path], ['ready', '--force'], ['status', '--confirm', 'test-task']]) {
     assert.equal(cli(fixture.primary, ...args).status, 1, args.join(' '));
   }
   assert.equal(cli(fixture.primary, 'ready', '--path', task.path).status, 1);

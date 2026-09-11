@@ -2,6 +2,7 @@ import { existsSync, lstatSync, mkdirSync, realpathSync, writeFileSync } from 'n
 import { basename, dirname, isAbsolute, join, relative, resolve } from 'node:path';
 import { createHandoff } from '../../handoff.mjs';
 import { contains, entryOf, fetchMain, git, taskName } from './git.mjs';
+import { linkWorktreeConfiguration } from './configuration.mjs';
 
 function destinationOf(requested, primary, task, entries) {
   if (requested && !isAbsolute(requested)) throw new Error('--path must be absolute.');
@@ -37,9 +38,10 @@ export function startWorktree(directory, name, requestedPath) {
     const handoff = createHandoff(destination, task);
     const record = { task, branch, baseRef: 'origin/main', baseSha, createdAt: new Date().toISOString() };
     writeFileSync(join(dirname(handoff), 'worktree.json'), `${JSON.stringify(record, null, 2)}\n`, { flag: 'wx' });
+    const configuration = linkWorktreeConfiguration(destination);
     return {
-      path: destination, branch, baseSha, handoff,
-      setup: 'Dependencies, caches, credentials, and review data were not copied. Use the Nix toolchain and install dependencies in this worktree when needed.',
+      path: destination, branch, baseSha, handoff, configuration,
+      setup: 'The ignored local configuration is linked from the primary checkout when available. Tracked configuration remains worktree-owned. Dependencies, caches, credentials, and review data were not copied. Install dependencies in this worktree when needed.',
       publish: `git push -u origin HEAD:refs/heads/${branch}`
     };
   } catch (error) {
