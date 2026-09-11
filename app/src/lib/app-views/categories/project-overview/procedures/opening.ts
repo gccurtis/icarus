@@ -1,6 +1,8 @@
 import type { Category, Target } from "$model/client/workspace-state";
 import type { Resource, ResourceKind } from "$app-views/categories/project-overview/procedures/resources";
 
+type OpenableResource = Pick<Resource, "kind" | "id">;
+
 const CATEGORY: Partial<Record<ResourceKind, Category>> = {
   document: "document-editor",
   presentation: "presentation-editor",
@@ -14,7 +16,7 @@ const CONTENT: Partial<Record<ResourceKind, "research.thread">> = {
   research: "research.thread"
 };
 
-export const openingFor = ({ kind, id }: Resource): Target | undefined => {
+export const openingFor = ({ kind, id }: OpenableResource): Target | undefined => {
   const category = CATEGORY[kind];
   if (category === undefined) return undefined;
   if (category === "external") return { category, focus: id };

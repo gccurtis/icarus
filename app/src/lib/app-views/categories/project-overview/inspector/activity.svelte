@@ -13,28 +13,37 @@
     PanelQuote,
     PanelSkeleton
   } from "$authored-components/panel";
-  import type {
-    ProjectActivityEntry,
-    ProjectPanelActor
-  } from "$capabilities/project/index.remote";
+  import type { ProjectPanelActor } from "$capabilities/project/index.remote";
   import {
     isContextView,
     isInspectorView,
     workspaceState
   } from "$model/client/workspace-state";
   import { activityLabel } from "$app-views/categories/project-overview/procedures/activity-label";
+  import { currentActivityResource } from "$app-views/categories/project-overview/procedures/activity-target";
   import { ticksTheClock } from "$app-views/categories/project-overview/procedures/effects/ticks-the-clock.svelte";
+  import { openingFor } from "$app-views/categories/project-overview/procedures/opening";
   import { projectActivity } from "$app-views/categories/project-overview/procedures/read-activity";
+  import { projectResources } from "$app-views/categories/project-overview/procedures/read-resources";
   import { shortSince } from "$app-views/categories/project-overview/procedures/rows";
 
-  const RESOURCE_KINDS = ["document", "presentation", "spreadsheet", "research", "finding"];
   const view = workspaceState();
   const clock = ticksTheClock();
+  const resourceAnswer = projectResources();
   const activityId = $derived(
     view.selection?.kind === "activity" ? view.selection.id : undefined
   );
   const answer = $derived(projectActivity(activityId));
   const event = $derived(answer?.ready ? answer.current : undefined);
+  const resourceIndex = $derived(resourceAnswer.ready ? resourceAnswer.current : undefined);
+  const targetResource = $derived(
+    event === null || event === undefined
+      ? undefined
+      : currentActivityResource(event.target, resourceIndex)
+  );
+  const targetOpening = $derived(
+    targetResource === undefined ? undefined : openingFor(targetResource)
+  );
   const question = $derived(
     event !== null &&
       event !== undefined &&
@@ -85,21 +94,17 @@
     }
   };
 
-  const inspectTarget = (entry: ProjectActivityEntry) => {
-    if (!RESOURCE_KINDS.includes(entry.target.kind)) return;
+  const inspectFinding = () => {
+    if (targetResource?.kind !== "finding") return;
     view.inspect("project-overview.resource", {
-      kind: entry.target.kind,
-      id: entry.target.id
+      kind: targetResource.kind,
+      id: targetResource.id
     });
   };
 
   const openTarget = () => {
-    if (event === undefined || event === null) return;
-    if (event.target.kind === "document") {
-      view.open({ category: "document-editor", resourceId: event.target.id });
-    } else if (event.target.kind === "presentation") {
-      view.open({ category: "presentation-editor", resourceId: event.target.id });
-    }
+    if (targetOpening === undefined) return;
+    view.open(targetOpening);
   };
 </script>
 
@@ -115,7 +120,7 @@
   {/snippet}
 
   {#snippet actions()}
-    {#if event !== null && event !== undefined && (event.target.kind === "document" || event.target.kind === "presentation")}
+    {#if targetOpening !== undefined}
       <PanelButton label="Open resource" icon={ExternalLink} tone="ghost" onclick={openTarget} />
     {/if}
   {/snippet}
@@ -156,12 +161,19 @@
 
       <PanelFields proportional>
         <PanelField label="Where" stacked hierarchy>
-          {#if RESOURCE_KINDS.includes(event.target.kind)}
+          {#if targetOpening !== undefined}
             <PanelLink
               label={question === undefined ? event.target.label : "Research chat"}
-              title={`${titleCase(event.target.kind)} · ${event.target.label}`}
+              title={`Open ${event.target.kind === "external-file" ? "External file" : titleCase(event.target.kind)} · ${event.target.label}`}
               lines={2}
-              onselect={() => inspectTarget(event)}
+              onselect={openTarget}
+            />
+          {:else if targetResource?.kind === "finding"}
+            <PanelLink
+              label={event.target.label}
+              title={`Inspect Finding · ${event.target.label}`}
+              lines={2}
+              onselect={inspectFinding}
             />
           {:else}
             {event.target.label}
