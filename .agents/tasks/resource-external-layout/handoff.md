@@ -6,15 +6,17 @@ Do not include credentials or copy sensitive logs.
 
 ## Snapshot
 
-- Updated: 2026-09-11T02:22:16-04:00
-- Status: External History follow-up implemented, verified, and committed; task
-  branch push remains
+- Updated: 2026-09-11T02:56:03-04:00
+- Status: product work, pre-merge hardening, and backlog updates are implemented,
+  committed, and verified; final handoff commit and task-branch push remain
 - Worktree: `/tmp/icarus-resource-external-layout`
 - Branch: `work/resource-external-layout`
 - Head when initialized: `3a9a6d3f5db20862d6bb15d9a38af0226731ded2`
-- Current verified head / dirty paths: History implementation `151ae0c`; only this
-  task handoff remains dirty
-- Integration target / base SHA, if relevant: `origin/main` at `3a9a6d3f5db20862d6bb15d9a38af0226731ded2`
+- Current verified product head: integration hardening `6c0c058`; backlog update
+  `227e051` follows it; only this task handoff remains dirty
+- Integration target / base SHA, if relevant: freshly fetched `origin/main` at
+  `3a9a6d3f5db20862d6bb15d9a38af0226731ded2`; it is the branch merge base and an
+  ancestor of this branch
 - Starting worktree/base record: optional `worktree.json` beside this handoff;
   link it when present and verify it against Git
 - Lead / delegated workers: lead only; no delegated write streams
@@ -53,6 +55,12 @@ Implement the requested resource and External Files layout refinement:
   inspects its stable file identity; in Directory mode the centre also moves to
   the file's containing directory. Make the recorded username independently
   inspect its person profile, and use compact `m`, `h`, and `d` relative times.
+- Record the confirmed missing semantic worker host under EXT-02 and add a stable
+  P1 AI-05 package for concurrent prompt-block, chat, and agent work.
+- Add separate backlog packages for prompt-block answer completeness and
+  execution-owned sandboxed Python across prompt blocks, chats, and agent tasks.
+- Evaluate the exact branch against current `origin/main`, harden concrete risks,
+  and report merge readiness without merging.
 
 Any broader External Files History/context redesign remains deferred to a later
 pass; the requested row, file-navigation, author, and compact-time interactions
@@ -60,10 +68,11 @@ are in this task.
 
 ## Decisions and authority
 
-This is an implementation request on `work/resource-external-layout`. Root
-`AGENTS.md` permits exact owned commits and push to that task branch after
-verification. Rebase, merge/push to main, deployment, external messages, paid live
-provider checks, and unrelated data changes are not authorized.
+This is an implementation request on `work/resource-external-layout` plus a
+pre-merge evaluation. Root `AGENTS.md` permits exact owned commits and push to
+that task branch after verification. Rebase, merge/push to main, deployment,
+external messages, paid live provider checks on user content, and unrelated data
+changes are not authorized.
 
 Interpret “four buttons” in context as reducing upload UI to the two file/folder
 pickers by removing the separate queue/submit steps. Upload failures and active
@@ -123,6 +132,23 @@ The lead owns all shared surfaces and final integration within the task branch.
   already offers, while preserving exact file/directory selection checks for
   External-owned inspectors. This prevents author inspection from being rejected
   during workspace persistence.
+- Pre-merge review narrowed flexible search width to an explicit `fluidSearch`
+  option used only by Resource and External tables; unrelated ScreenFilters keep
+  their prior width. It also distinguishes unclaimed `Queued` jobs from claimed
+  `In progress` jobs and always clears the file picker after transport failure so
+  the same file can be retried.
+- The backlog now makes a process-owned semantic worker host, startup recovery,
+  clean shutdown, deterministic tests, and bounded disposable live verification
+  explicit EXT-02 work. New P1 package AI-05 requires independent prompt blocks,
+  separate chats, and separate agent tasks to progress and cancel concurrently.
+- P1 package AI-06 defines prompt-block completeness as coverage of every explicit
+  question/constraint/output requirement, with inspectable unanswered parts and
+  revision-safe checks. P2 package AI-07 defines one no-network, resource-bounded,
+  execution-owned Python sandbox for prompt blocks, chats, and agent tasks.
+- Fresh Git evaluation found `origin/main` has zero target-only commits and is the
+  exact merge base. The candidate is a fast-forward with no textual conflicts.
+  No Template production code, provider configuration, represented Store schema,
+  or user data is part of the branch diff.
 
 ## Verification evidence
 
@@ -137,11 +163,19 @@ The lead owns all shared surfaces and final integration within the task branch.
 | Focused unit profile | External History projection/query and External workspace admission | 3 files, 14 tests passed | `.agents/runtime/runs/1789107361562-unit-0b08ff67` |
 | Focused Chromium profile | External file lifecycle and panel History interactions | 6/6 passed | `.agents/runtime/runs/1789107379147-browser-0eed4946` |
 | `nix develop ./infra/devshell --command pnpm --dir app build` | Final History product/test tree | Typecheck: 0 errors, 0 warnings; production SSR/client build and adapter completed | Terminal evidence |
+| `node .agents/scripts/verify.mjs quick` through Nix | Post-audit exact product/test tree | Typecheck: 0 errors, 0 warnings. Architecture: 90 clean, 176 baselined, 0 findings. | `.agents/runtime/runs/1789109643408-quick-1e7a076c` |
+| Focused unit profile | Upload retry, semantic labels, History projection/query, External workspace admission | 5 files, 28 tests passed | `.agents/runtime/runs/1789109254088-unit-a525b864` |
+| Focused Chromium merge-candidate profile | New Tab, External library/panels/lifecycle | 22/22 passed; wide, compact, and 125% screenshots inspected | `.agents/runtime/runs/1789109277969-browser-6820bcf3` |
+| Full unit profile | Exact post-audit product/test tree | 280 files passed, 2 skipped; 2,098 tests passed, 2 skipped | `.agents/runtime/runs/1789109430896-unit-1df6543f` |
+| `nix develop ./infra/devshell --command pnpm --dir app build` | Exact post-audit product/test tree | Typecheck: 0 errors, 0 warnings; 4,535 SSR and 6,018 client modules; adapter-node completed | Terminal evidence |
+| Backlog link/anchor validation | Revised backlog | 65 unique anchors; 89 internal links; no duplicate anchors or missing targets | Terminal evidence |
 
-The first browser invocation using Playwright's cached headless shell failed to
+The first earlier browser invocation using Playwright's cached headless shell failed to
 start because that local binary could not resolve `libnspr4.so`. This was an
 environment-only failure; the required tests were rerun with the supported Nix
-Chromium executable and passed. No live-provider tests were run or needed.
+Chromium executable and passed. No provider call was made during this UI merge
+evaluation. That skip is not treated as evidence that automatic ingestion works;
+the missing worker/liveness contract is now explicit backlog work.
 
 ## Server and data ownership
 
@@ -155,19 +189,23 @@ Chromium executable and passed. No live-provider tests were run or needed.
 
 ## Risks and next executable step
 
+The missing semantic worker host and concurrent/completeness/Python AI work are
+confirmed backlog items, not regressions introduced by this surface branch.
 Broader External Files History/context redesign remains explicitly deferred. New
-Tab's visible row count naturally varies with viewport height; the verified contract is
-the Project Overview-style bounded screen and table-owned overflow, with a
-reachability fallback for very short windows. Next: push the exact owned commits
-to `work/resource-external-layout`, then retain the worktree for user review. Do
-not merge or push main without fresh explicit authorization.
+Tab's visible row count naturally varies with viewport height; the verified
+contract is the Project Overview-style bounded screen and table-owned overflow,
+with a reachability fallback for very short windows. No blocking merge defect
+remains after the audit corrections. Next: commit backlog/handoff, push the exact
+owned commits to `work/resource-external-layout`, then retain the worktree for user
+review. Do not merge or push main without fresh explicit authorization.
 
 ## Publication / handoff
 
 - Commits created by this task: prior layout `a6f4397`; External History follow-up
-  `151ae0c`, followed by task-handoff metadata commits
-- Push / merge state: prior layout is pushed; History follow-up task-branch push
-  pending; main untouched
+  `151ae0c`; pre-merge hardening `6c0c058`; backlog update `227e051`, followed by
+  task-handoff metadata commits
+- Push / merge state: branch through `6ba6795` is pushed; commits `6c0c058` and
+  `227e051` plus this handoff remain to push; main untouched
 - Worktree cleanup / retained local artifacts: keep the worktree and ignored
   dependencies/runtime evidence for review; no owned server remains
 - Next owner and remaining work: user review, then separately authorized main
