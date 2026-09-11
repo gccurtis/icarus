@@ -33,13 +33,6 @@ export const reuploadExternalFile = async (
     revision: null,
     detail: "No file in this project has that id."
   };
-  if ("unavailable" in preliminary) return {
-    accepted: false,
-    externalFileId: asked.externalFileId,
-    reason: "corrupt",
-    revision: null,
-    detail: preliminary.detail
-  };
   if (asked.file.size > limits.maxFileBytes) return {
     accepted: false,
     externalFileId: asked.externalFileId,

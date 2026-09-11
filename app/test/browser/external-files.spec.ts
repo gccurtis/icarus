@@ -49,6 +49,9 @@ test("External remains one production singleton across inspection, navigation, a
   const tabs = await openExternal(page);
   const externalTab = tabs.getByRole("button", { name: "External Files", exact: true });
   await expect(externalTab).toHaveCount(1);
+  const context = page.getByRole("complementary", { name: "Context" });
+  await expect(context.getByText("Known footprint", { exact: true })).toBeVisible();
+  await expect(context.getByText("Quarantined metadata", { exact: true })).toHaveCount(0);
 
   await page.locator('form.upload-form input[type="file"]').first().setInputFiles({
     name: "singleton-proof.md",

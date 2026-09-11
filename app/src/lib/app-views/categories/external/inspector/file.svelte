@@ -23,8 +23,7 @@
     externalFileDownloadHref,
     externalFileLibrary,
     externalFileReupload,
-    selectedExternalFileIdIn,
-    unavailableIn
+    selectedExternalFileIdIn
   } from "$app-views/categories/external/procedures";
   import { workspaceState } from "$model/client/workspace-state";
 
@@ -36,7 +35,6 @@
   const readableId = $derived(selectedExternalFileIdIn(selectedId, availableIds));
   const detail = $derived(externalFileDetail(readableId));
   const answer = $derived(detail !== undefined && detail.ready ? detail.current : undefined);
-  const unavailable = $derived(unavailableIn(answer));
   const file = $derived(detailIn(answer, state.now));
   const reupload = externalFileReupload.for("reupload");
   const busy = $derived(fileInspector.isBusy(state, reupload.pending));
@@ -61,8 +59,6 @@
     <PanelBanner title="File unavailable" tone="danger">{detail.error instanceof Error ? detail.error.message : String(detail.error)}</PanelBanner>
   {:else if !detail.ready}
     <PanelSkeleton shape="fields" count={9} />
-  {:else if unavailable}
-    <PanelBanner title="File metadata unavailable" tone="danger">{unavailable.detail}</PanelBanner>
   {:else if file}
     <div class="stack">
       {#if state.actionError}<PanelBanner title="The file did not change" tone="attention">{state.actionError}</PanelBanner>{/if}

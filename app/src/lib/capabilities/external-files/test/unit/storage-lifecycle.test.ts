@@ -65,13 +65,11 @@ describe("External native storage lifecycle", () => {
 
     const firstDetail = await readExternalFile({ externalFileId: firstOutcome.externalFileId });
     const secondDetail = await readExternalFile({ externalFileId: secondOutcome.externalFileId });
-    assert.ok(firstDetail !== null && !("unavailable" in firstDetail));
-    assert.ok(secondDetail !== null && !("unavailable" in secondDetail));
+    assert.ok(firstDetail !== null);
+    assert.ok(secondDetail !== null);
     if (
       firstDetail === null ||
-      secondDetail === null ||
-      "unavailable" in firstDetail ||
-      "unavailable" in secondDetail
+      secondDetail === null
     ) return;
     assert.equal(firstDetail.hash, secondDetail.hash);
 

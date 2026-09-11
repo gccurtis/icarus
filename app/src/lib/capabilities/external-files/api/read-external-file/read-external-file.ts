@@ -12,7 +12,7 @@ export const readExternalFile = async (input: unknown): Promise<ReadExternalFile
   const asked = validateReadExternalFile(input);
   const model = serverModel();
   const found = externalFileIn(model, scope, asked.externalFileId);
-  if (found === null || "unavailable" in found) return found;
+  if (found === null) return null;
   let native: ExternalFileNativeState;
   try {
     const bytes = await model.externalFileStorage.read({

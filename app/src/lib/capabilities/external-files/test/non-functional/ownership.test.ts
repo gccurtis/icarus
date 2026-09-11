@@ -79,7 +79,7 @@ afterEach(async () => rm(directory, { recursive: true, force: true }));
 
 describe("cross-project External ownership", () => {
   test("reads reveal no foreign row, bytes, or lifecycle history", async () => {
-    expect(await readExternalFileLibrary()).toMatchObject({ files: [], unavailable: [] });
+    expect(await readExternalFileLibrary()).toMatchObject({ files: [] });
     expect(await readExternalFile({ externalFileId: foreignId })).toBeNull();
     expect(await readExternalFileContent({ externalFileId: foreignId })).toBeNull();
     expect(await readExternalFileHistory()).toEqual({ entries: [] });

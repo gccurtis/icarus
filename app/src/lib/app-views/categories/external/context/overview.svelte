@@ -33,7 +33,6 @@
         <h3>Native storage</h3>
         <dl>
           <dt>Known footprint</dt><dd>{bytesLabel(knownBytes)}</dd>
-          <dt>Quarantined metadata</dt><dd>{library.current.unavailable.length}</dd>
         </dl>
       </section>
       <section>

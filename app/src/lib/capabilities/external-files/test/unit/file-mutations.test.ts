@@ -27,8 +27,8 @@ describe("External file mutations", () => {
     assert.notEqual(outcome.status, "rejected");
     if (outcome.status === "rejected") return;
     const before = await readExternalFile({ externalFileId: outcome.externalFileId });
-    assert.ok(before !== null && !("unavailable" in before));
-    if (before === null || "unavailable" in before) return;
+    assert.ok(before !== null);
+    if (before === null) return;
 
     const changed = await renameExternalFile({
       externalFileId: before.id,
@@ -37,8 +37,8 @@ describe("External file mutations", () => {
     });
     assert.equal(changed.accepted, true);
     const after = await readExternalFile({ externalFileId: before.id });
-    assert.ok(after !== null && !("unavailable" in after));
-    if (after === null || "unavailable" in after) return;
+    assert.ok(after !== null);
+    if (after === null) return;
     assert.equal(after.name, "pricing.ts");
     assert.equal(after.originalName, "answer.ts");
     assert.equal(after.relativePath, "src/pricing.ts");
@@ -89,8 +89,8 @@ describe("External file mutations", () => {
       at: 1
     });
     const detail = await readExternalFile({ externalFileId: fileId });
-    assert.ok(detail !== null && !("unavailable" in detail));
-    if (detail === null || "unavailable" in detail) return;
+    assert.ok(detail !== null);
+    if (detail === null) return;
     assert.equal(detail.usage.total, 1);
 
     const refused = await removeExternalFile({
@@ -125,8 +125,8 @@ describe("External file mutations", () => {
     assert.notEqual(first.status, "rejected");
     if (first.status === "rejected") return;
     const detail = await readExternalFile({ externalFileId: first.externalFileId });
-    assert.ok(detail !== null && !("unavailable" in detail));
-    if (detail === null || "unavailable" in detail) return;
+    assert.ok(detail !== null);
+    if (detail === null) return;
     const moved = await relocateExternalFile({
       externalFileId: detail.id,
       baseRevision: detail.revision,

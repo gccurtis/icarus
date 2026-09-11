@@ -15,7 +15,6 @@ export const readExternalFileContent = async (
   const model = serverModel();
   const found = externalFileIn(model, scope, asked.externalFileId);
   if (found === null) return null;
-  if ("unavailable" in found) throw new Error(found.detail);
   const bytes = await model.externalFileStorage.read({
     storageId: found.row.storageId,
     hash: found.row.hash,

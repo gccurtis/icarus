@@ -16,8 +16,7 @@ import {
 import { externalFilesLimits } from "$capabilities/external-files/api/shared/configuration";
 import type {
   ExternalFileLibraryItem,
-  ExternalFileOriginView,
-  ExternalFileUnavailable
+  ExternalFileOriginView
 } from "$capabilities/external-files/types/external-files";
 
 export const rowsOf = <T extends Parameters<StoreUnitOfWork["create"]>[0]>(
@@ -49,34 +48,26 @@ const actorName = (relations: ExternalFileRelations, scope: Scope, actor: Actor)
     const visible = relations.memberships.some(
       (row) => row.projectId === scope.projectId && row.userId === actor.userId
     );
-    if (!visible) return "Someone";
+    if (!visible) return "User no longer available";
     const user = relations.users.find((row) => row._id === actor.userId);
-    if (user === undefined) throw new Error("external file actor names an existing visible user");
-    return user.displayName;
+    return user?.displayName ?? "User no longer available";
   }
   if (actor.kind === "connector") {
     const connector = relations.connectors.find(
       (row) => row.projectId === scope.projectId && row._id === actor.connectorId
     );
-    if (connector === undefined) throw new Error("external file actor names a project connector");
-    return connector.name;
+    return connector?.name ?? "Connector no longer available";
   }
   const task = relations.agentTasks.find(
     (row) => row.projectId === scope.projectId && row._id === actor.taskId
   );
-  if (task === undefined) throw new Error("external file actor names a project agent task");
-  return task.title;
+  return task?.title ?? "Task no longer available";
 };
 
 const originView = (
-  relations: ExternalFileRelations,
-  scope: Scope,
   value: ExternalFileOrigin
 ): ExternalFileOriginView => {
   if (value.kind === "upload") return { kind: "upload", label: "Uploaded" };
-  if (!relations.connectors.some(
-    (row) => row.projectId === scope.projectId && row._id === value.connectorId
-  )) throw new Error("external file origin names a project connector");
   return {
     kind: "connector",
     label: "Connector",
@@ -117,7 +108,7 @@ const projectItem = (
       updatedAt: admitted.updatedAt,
       createdByName: actorName(relations, scope, admitted.createdBy),
       updatedByName: actorName(relations, scope, admitted.updatedBy),
-      origin: originView(relations, scope, admitted.origin),
+      origin: originView(admitted.origin),
       ...(admitted.semanticContext === undefined
         ? {}
         : { semanticContext: admitted.semanticContext }),
@@ -140,7 +131,6 @@ export const externalFileRowIn = (
 
 export const externalFilesIn = (model: ServerModel, scope: Scope) => {
   const files: AdmittedExternalFile[] = [];
-  const unavailable: ExternalFileUnavailable[] = [];
   const relations = relationsIn(model.store);
   const semanticStatus = semanticStatusReaderFor(model, asId<"projects">(scope.projectId));
   for (const row of rowsOf(model.store, "externalFiles")) {
@@ -149,25 +139,16 @@ export const externalFilesIn = (model: ServerModel, scope: Scope) => {
       row,
       externalFilesLimits(model.configuration).maxPathBytes
     );
-    try {
-      files.push(projectItem(scope, admitted, semanticStatus, relations));
-    } catch (error) {
-      unavailable.push({
-        unavailable: true,
-        externalFileId: admitted._id,
-        reason: "corrupt",
-        detail: error instanceof Error ? error.message : String(error)
-      });
-    }
+    files.push(projectItem(scope, admitted, semanticStatus, relations));
   }
-  return { files, unavailable };
+  return files;
 };
 
 export const externalFileIn = (
   model: ServerModel,
   scope: Scope,
   externalFileId: string
-): AdmittedExternalFile | ExternalFileUnavailable | null => {
+): AdmittedExternalFile | null => {
   const row = rowsOf(model.store, "externalFiles").find(
     (candidate) => candidate.projectId === scope.projectId && candidate._id === externalFileId
   );
@@ -178,19 +159,5 @@ export const externalFileIn = (
   );
   const relations = relationsIn(model.store);
   const semanticStatus = semanticStatusReaderFor(model, asId<"projects">(scope.projectId));
-  try {
-    return projectItem(
-      scope,
-      admitted,
-      semanticStatus,
-      relations
-    );
-  } catch (error) {
-    return {
-      unavailable: true,
-      externalFileId: admitted._id,
-      reason: "corrupt",
-      detail: error instanceof Error ? error.message : String(error)
-    };
-  }
+  return projectItem(scope, admitted, semanticStatus, relations);
 };

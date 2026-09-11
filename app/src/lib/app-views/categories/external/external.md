@@ -12,8 +12,8 @@ singleton External tab; it never creates a per-file editor tab.
 
 Context is library-wide:
 
-- `external.overview` reports inventory, projected folders, bytes, unavailable
-  metadata and exact/material coverage.
+- `external.overview` reports inventory, native bytes, and exact/material
+  semantic coverage.
 - `external.history` reads durable upload, re-upload, rename, move,
   dataset-context and delete events. It is not reconstructed from current rows.
 

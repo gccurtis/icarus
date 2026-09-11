@@ -91,9 +91,6 @@
     {:else if !library.ready}
       <ScreenEmpty title="Loading External Files">Reading project-owned file metadata.</ScreenEmpty>
     {:else}
-      {#if library.current.unavailable.length > 0}
-        <ScreenNote tone="gap">{library.current.unavailable.length} represented file {library.current.unavailable.length === 1 ? "row is" : "rows are"} hidden because its metadata did not pass admission.</ScreenNote>
-      {/if}
       <ScreenGroup label={state.mode === "table" ? "All files" : (current?.name ?? "External Files")}
         count={String(state.mode === "table" ? files.length : (current?.descendantFileCount ?? files.length))}>
         <div class="table-stack">
