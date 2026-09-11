@@ -104,15 +104,15 @@ to exist. The exact current-index check handles that case intentionally. History
 queries refresh on a new request; the deletion browser scenario reloads before
 selecting the newly written deletion event.
 
-Push `HEAD:refs/heads/work/activity-inspector`. Main integration still needs
-explicit authorization.
+Review the served explainer and `work/activity-inspector`. Main integration still
+needs explicit authorization.
 
 ## Publication / handoff
 
 - Commits created by this task: `45e49e3` (`Make activity destinations navigable`)
   and `6a8533c` (`Document the activity event pipeline`); a status-only handoff
   update sits atop them
-- Push / merge state: pending task-branch push; no main integration
+- Push / merge state: published to `origin/work/activity-inspector`; no main integration
 - Worktree cleanup: retain because the served explainer and branch review are active
 - Next owner: review the served explainer and task branch, then authorize main
   integration separately if desired
