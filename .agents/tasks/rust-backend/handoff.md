@@ -12,8 +12,7 @@ evidence before acting. Never copy credentials into this file.
 - Branch: `work/rust-backend`
 - Starting/base commit: `1f284fc07852e1256c52b07a393b43f5195ba5f8`
   from `work/pure-functions`
-- Current verified head / dirty paths: base head plus the exact task-owned paths
-  listed below, pending the first task commit
+- Verified content commit: `55d6c57` (`design Rust model purity template`)
 - Eventual integration target: not yet settled; no merge, rebase, or push to
   `main` is authorized
 - Lead: root; no delegated workers
@@ -114,7 +113,7 @@ worktree has no installed dependencies. No Rust code exists to compile yet.
 
 ## Publication / handoff
 
-- Commits created by this task: pending
-- Push state: pending to `origin/work/rust-backend`
+- Commits created by this task: `55d6c57` plus this handoff status update
+- Push state: published to `origin/work/rust-backend` on completion
 - Merge/rebase/main publication: not authorized
 - Worktree retained at the path above
