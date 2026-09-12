@@ -1,0 +1,42 @@
+[
+  {
+    "_id": "documents:1",
+    "_creationTime": 1785312000000,
+    "projectId": "default",
+    "title": "Winter readiness brief",
+    "summary": "Executive view of the grid's highest winter reliability exposures and the decisions needed before peak season.",
+    "createdBy": { "kind": "user", "userId": "users:1" },
+    "updatedBy": { "kind": "user", "userId": "users:1" },
+    "updatedAt": 1788299760000
+  },
+  {
+    "_id": "documents:2",
+    "_creationTime": 1784707200000,
+    "projectId": "default",
+    "title": "Substation 14 incident write-up",
+    "summary": "Post-incident account of the Substation 14 outage, restoration sequence, and follow-up actions.",
+    "createdBy": { "kind": "user", "userId": "users:2" },
+    "updatedBy": { "kind": "user", "userId": "users:3" },
+    "updatedAt": 1788213600000
+  },
+  {
+    "_id": "documents:3",
+    "_creationTime": 1783497600000,
+    "projectId": "default",
+    "title": "Interconnect glossary",
+    "summary": "Shared definitions for the operational, planning, and regulatory terms used across this project.",
+    "createdBy": { "kind": "user", "userId": "users:3" },
+    "updatedBy": { "kind": "user", "userId": "users:3" },
+    "updatedAt": 1787954400000
+  },
+  {
+    "_id": "documents:4",
+    "_creationTime": 1788111000000,
+    "projectId": "default",
+    "title": "Transformer bank replacement decision",
+    "summary": "Decision record comparing replacement timing, service risk, and capital cost for the transformer bank.",
+    "createdBy": { "kind": "user", "userId": "default-user" },
+    "updatedBy": { "kind": "user", "userId": "users:1" },
+    "updatedAt": 1788460800000
+  }
+]

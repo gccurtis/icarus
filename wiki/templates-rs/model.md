@@ -1,6 +1,5 @@
 ---
 name: {{Model name}}
-language: Rust
 environment: server
 model-directory: {{path/to/src/model/...}}
 runtime-construction: {{path/to/src/runtime/models/build.rs}}

@@ -1,0 +1,68 @@
+[
+  {
+    "_id": "resourceSets:1",
+    "_creationTime": 1785052800000,
+    "projectId": "default",
+    "name": "Winter filings",
+    "description": "Everything the regulator sees in the January packet.",
+    "set": {
+      "include": [{ "select": "kinds", "kinds": ["document"] }],
+      "exclude": []
+    },
+    "createdBy": { "kind": "user", "userId": "users:1" },
+    "revision": 2,
+    "updatedAt": 1788126000000
+  },
+  {
+    "_id": "resourceSets:2",
+    "_creationTime": 1782288000000,
+    "projectId": "default",
+    "name": "Field evidence",
+    "set": {
+      "include": [{ "select": "resources", "refs": [{ "kind": "finding", "id": "findings:1" }] }],
+      "exclude": []
+    },
+    "createdBy": { "kind": "user", "userId": "users:4" },
+    "revision": 1,
+    "updatedAt": 1787004000000
+  },
+  {
+    "_id": "resourceSets:3",
+    "_creationTime": 1787000000000,
+    "projectId": "default",
+    "boundTo": {
+      "kind": "hole",
+      "templateId": "templates:1",
+      "hole": "incident_evidence"
+    },
+    "set": {
+      "include": [{ "select": "kinds", "kinds": ["finding", "document", "spreadsheet"] }],
+      "exclude": [{ "select": "resources", "refs": [{ "kind": "document", "id": "documents:3" }] }]
+    },
+    "createdBy": { "kind": "user", "userId": "users:1" },
+    "revision": 1,
+    "updatedAt": 1787004000000
+  },
+  {
+    "_id": "resourceSets:4",
+    "_creationTime": 1787244300000,
+    "projectId": "default",
+    "boundTo": {
+      "kind": "hole",
+      "templateId": "templates:3",
+      "hole": "source_material"
+    },
+    "set": {
+      "include": [
+        {
+          "select": "resources",
+          "refs": [{ "kind": "document", "id": "documents:3" }]
+        }
+      ],
+      "exclude": []
+    },
+    "createdBy": { "kind": "user", "userId": "default-user" },
+    "revision": 1,
+    "updatedAt": 1787244300000
+  }
+]

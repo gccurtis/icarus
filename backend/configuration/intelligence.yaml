@@ -1,0 +1,35 @@
+# Grounded synthesis. The OpenRouter credential remains in git-ignored local.yaml.
+intelligence:
+  api: openrouter
+  providers:
+    openrouter:
+      endpoint: https://openrouter.ai/api/v1/chat/completions
+      model: ~openai/gpt-latest
+      timeoutMs: 180000
+      maxOutputTokens: 4096
+      reasoningEffort: medium
+
+  agent:
+    # The default for every caller. One grounded synthesis of one prompt.
+    maxToolRounds: 8
+    maxSourceRetries: 2
+    defaultTopK: 8
+
+  # Research chat. A cheap reasoning model that calls tools, named per call.
+  chat:
+    model: moonshotai/kimi-k2.5
+    topK: 8
+    maxSources: 12
+    # A conversation searches, reads around what it found and searches again.
+    # -1 is unbounded; deadlineMs is what actually bounds the whole run, since
+    # the provider timeout only bounds one request of it.
+    maxToolRounds: -1
+    deadlineMs: 600000
+
+  # Agent tasks. The current runner is a grounded, project-scoped read lane.
+  task:
+    model: moonshotai/kimi-k2.5
+    topK: 8
+    maxSources: 12
+    maxToolRounds: -1
+    deadlineMs: 600000

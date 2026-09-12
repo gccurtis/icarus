@@ -1,0 +1,1147 @@
+[
+  {
+    "_id": "threadParts:task-feeder12-1",
+    "_creationTime": 1788644880000,
+    "projectId": "default",
+    "threadId": "threads:task-feeder12",
+    "part": 1,
+    "messages": [
+      {
+        "id": "m-feeder12-0",
+        "role": "prompt",
+        "author": {
+          "kind": "user",
+          "userId": "users:1"
+        },
+        "sentAt": 1788644880000,
+        "blocks": [
+          {
+            "id": "m-feeder12-0-b",
+            "type": "text",
+            "variant": "paragraph",
+            "atoms": [
+              {
+                "id": "m-feeder12-0-b-a",
+                "kind": "literal",
+                "text": "Take the relay logs for Feeder 12 between 03:10 and 04:40 and line them up against the outage record. Say where the two disagree and by how much. Do not speculate past the record."
+              }
+            ],
+            "display": "Take the relay logs for Feeder 12 between 03:10 and 04:40 and line them up against the outage record. Say where the two disagree and by how much. Do not speculate past the record.",
+            "marks": []
+          }
+        ],
+        "state": "complete"
+      },
+      {
+        "id": "m-feeder12-1",
+        "role": "prompt",
+        "author": {
+          "kind": "user",
+          "userId": "users:1"
+        },
+        "sentAt": 1788644910000,
+        "blocks": [
+          {
+            "id": "m-feeder12-1-b",
+            "type": "text",
+            "variant": "paragraph",
+            "atoms": [
+              {
+                "id": "m-feeder12-1-b-a",
+                "kind": "literal",
+                "text": "Start with the relay logs rather than the outage record. The record is the thing I doubt."
+              }
+            ],
+            "display": "Start with the relay logs rather than the outage record. The record is the thing I doubt.",
+            "marks": []
+          }
+        ],
+        "state": "complete"
+      },
+      {
+        "id": "m-feeder12-2",
+        "role": "response",
+        "author": {
+          "kind": "agent",
+          "taskId": "agentTasks:feeder12"
+        },
+        "sentAt": 1788644940000,
+        "blocks": [
+          {
+            "id": "m-feeder12-2-b",
+            "type": "text",
+            "variant": "paragraph",
+            "atoms": [
+              {
+                "id": "m-feeder12-2-b-a",
+                "kind": "literal",
+                "text": "Understood. Reading the relay export first and treating the outage record as the claim under test."
+              }
+            ],
+            "display": "Understood. Reading the relay export first and treating the outage record as the claim under test.",
+            "marks": []
+          }
+        ],
+        "state": "complete"
+      },
+      {
+        "id": "m-feeder12-3",
+        "role": "response",
+        "author": {
+          "kind": "agent",
+          "taskId": "agentTasks:feeder12"
+        },
+        "sentAt": 1788645360000,
+        "blocks": [
+          {
+            "id": "m-feeder12-3-b",
+            "type": "text",
+            "variant": "paragraph",
+            "atoms": [
+              {
+                "id": "m-feeder12-3-b-a",
+                "kind": "literal",
+                "text": "Relay 12-B trips 90 seconds early, consistently. That is not skew. The skew is a separate 4 seconds."
+              }
+            ],
+            "display": "Relay 12-B trips 90 seconds early, consistently. That is not skew. The skew is a separate 4 seconds.",
+            "marks": []
+          }
+        ],
+        "state": "complete"
+      }
+    ]
+  },
+  {
+    "_id": "threadParts:task-minutes-41-1",
+    "_creationTime": 1788645420000,
+    "projectId": "default",
+    "threadId": "threads:task-minutes-41",
+    "part": 1,
+    "messages": [
+      {
+        "id": "m-minutes-41-0",
+        "role": "prompt",
+        "author": {
+          "kind": "system"
+        },
+        "sentAt": 1788645420000,
+        "blocks": [
+          {
+            "id": "m-minutes-41-0-b",
+            "type": "text",
+            "variant": "paragraph",
+            "atoms": [
+              {
+                "id": "m-minutes-41-0-b-a",
+                "kind": "literal",
+                "text": "When the outage minutes sheet changes, recompute the per-substation totals and note any substation whose total moved by more than five percent."
+              }
+            ],
+            "display": "When the outage minutes sheet changes, recompute the per-substation totals and note any substation whose total moved by more than five percent.",
+            "marks": []
+          }
+        ],
+        "state": "complete"
+      }
+    ]
+  },
+  {
+    "_id": "threadParts:task-substation14-1",
+    "_creationTime": 1788643560000,
+    "projectId": "default",
+    "threadId": "threads:task-substation14",
+    "part": 1,
+    "messages": [
+      {
+        "id": "m-substation14-0",
+        "role": "prompt",
+        "author": {
+          "kind": "user",
+          "userId": "default-user"
+        },
+        "sentAt": 1788643560000,
+        "blocks": [
+          {
+            "id": "m-substation14-0-b",
+            "type": "text",
+            "variant": "paragraph",
+            "atoms": [
+              {
+                "id": "m-substation14-0-b-a",
+                "kind": "literal",
+                "text": "Draft the incident write-up for Substation 14 using only findings marked accepted. Keep the register's numbering."
+              }
+            ],
+            "display": "Draft the incident write-up for Substation 14 using only findings marked accepted. Keep the register's numbering.",
+            "marks": []
+          }
+        ],
+        "state": "complete"
+      },
+      {
+        "id": "m-substation14-1",
+        "role": "response",
+        "author": {
+          "kind": "agent",
+          "taskId": "agentTasks:substation14"
+        },
+        "sentAt": 1788644400000,
+        "blocks": [
+          {
+            "id": "m-substation14-1-b",
+            "type": "text",
+            "variant": "paragraph",
+            "atoms": [
+              {
+                "id": "m-substation14-1-b-a",
+                "kind": "literal",
+                "text": "Seven findings are accepted. Two on the transformer bank are still proposed, and the position depends on them."
+              }
+            ],
+            "display": "Seven findings are accepted. Two on the transformer bank are still proposed, and the position depends on them.",
+            "marks": []
+          }
+        ],
+        "state": "complete"
+      }
+    ]
+  },
+  {
+    "_id": "threadParts:task-nightly-184-1",
+    "_creationTime": 1788591600000,
+    "projectId": "default",
+    "threadId": "threads:task-nightly-184",
+    "part": 1,
+    "messages": [
+      {
+        "id": "m-nightly-184-0",
+        "role": "prompt",
+        "author": {
+          "kind": "system"
+        },
+        "sentAt": 1788591600000,
+        "blocks": [
+          {
+            "id": "m-nightly-184-0-b",
+            "type": "text",
+            "variant": "paragraph",
+            "atoms": [
+              {
+                "id": "m-nightly-184-0-b-a",
+                "kind": "literal",
+                "text": "Summarise last night's outage reports by substation and flag anything that changes the filing position."
+              }
+            ],
+            "display": "Summarise last night's outage reports by substation and flag anything that changes the filing position.",
+            "marks": []
+          }
+        ],
+        "state": "complete"
+      }
+    ]
+  },
+  {
+    "_id": "threadParts:task-nightly-183-1",
+    "_creationTime": 1788505200000,
+    "projectId": "default",
+    "threadId": "threads:task-nightly-183",
+    "part": 1,
+    "messages": [
+      {
+        "id": "m-nightly-183-0",
+        "role": "prompt",
+        "author": {
+          "kind": "system"
+        },
+        "sentAt": 1788505200000,
+        "blocks": [
+          {
+            "id": "m-nightly-183-0-b",
+            "type": "text",
+            "variant": "paragraph",
+            "atoms": [
+              {
+                "id": "m-nightly-183-0-b-a",
+                "kind": "literal",
+                "text": "Summarise last night's outage reports by substation and flag anything that changes the filing position."
+              }
+            ],
+            "display": "Summarise last night's outage reports by substation and flag anything that changes the filing position.",
+            "marks": []
+          }
+        ],
+        "state": "complete"
+      }
+    ]
+  },
+  {
+    "_id": "threadParts:task-nightly-182-1",
+    "_creationTime": 1788418800000,
+    "projectId": "default",
+    "threadId": "threads:task-nightly-182",
+    "part": 1,
+    "messages": [
+      {
+        "id": "m-nightly-182-0",
+        "role": "prompt",
+        "author": {
+          "kind": "system"
+        },
+        "sentAt": 1788418800000,
+        "blocks": [
+          {
+            "id": "m-nightly-182-0-b",
+            "type": "text",
+            "variant": "paragraph",
+            "atoms": [
+              {
+                "id": "m-nightly-182-0-b-a",
+                "kind": "literal",
+                "text": "Summarise last night's outage reports by substation and flag anything that changes the filing position."
+              }
+            ],
+            "display": "Summarise last night's outage reports by substation and flag anything that changes the filing position.",
+            "marks": []
+          }
+        ],
+        "state": "complete"
+      }
+    ]
+  },
+  {
+    "_id": "threadParts:task-nightly-181-1",
+    "_creationTime": 1788332400000,
+    "projectId": "default",
+    "threadId": "threads:task-nightly-181",
+    "part": 1,
+    "messages": [
+      {
+        "id": "m-nightly-181-0",
+        "role": "prompt",
+        "author": {
+          "kind": "system"
+        },
+        "sentAt": 1788332400000,
+        "blocks": [
+          {
+            "id": "m-nightly-181-0-b",
+            "type": "text",
+            "variant": "paragraph",
+            "atoms": [
+              {
+                "id": "m-nightly-181-0-b-a",
+                "kind": "literal",
+                "text": "Summarise last night's outage reports by substation and flag anything that changes the filing position."
+              }
+            ],
+            "display": "Summarise last night's outage reports by substation and flag anything that changes the filing position.",
+            "marks": []
+          }
+        ],
+        "state": "complete"
+      }
+    ]
+  },
+  {
+    "_id": "threadParts:task-citations-23-1",
+    "_creationTime": 1788638400000,
+    "projectId": "default",
+    "threadId": "threads:task-citations-23",
+    "part": 1,
+    "messages": [
+      {
+        "id": "m-citations-23-0",
+        "role": "prompt",
+        "author": {
+          "kind": "system"
+        },
+        "sentAt": 1788638400000,
+        "blocks": [
+          {
+            "id": "m-citations-23-0-b",
+            "type": "text",
+            "variant": "paragraph",
+            "atoms": [
+              {
+                "id": "m-citations-23-0-b-a",
+                "kind": "literal",
+                "text": "For every citation in the Winter readiness brief, confirm the source carries the claim. Flag anything the source only implies."
+              }
+            ],
+            "display": "For every citation in the Winter readiness brief, confirm the source carries the claim. Flag anything the source only implies.",
+            "marks": []
+          }
+        ],
+        "state": "complete"
+      },
+      {
+        "id": "m-citations-23-1",
+        "role": "response",
+        "author": {
+          "kind": "agent",
+          "taskId": "agentTasks:citations-23"
+        },
+        "sentAt": 1788638640000,
+        "blocks": [
+          {
+            "id": "m-citations-23-1-b",
+            "type": "text",
+            "variant": "paragraph",
+            "atoms": [
+              {
+                "id": "m-citations-23-1-b-a",
+                "kind": "literal",
+                "text": "Eleven citations checked. Nine are carried. Two in the hardening paragraph are implied rather than stated; I have marked both in the brief."
+              }
+            ],
+            "display": "Eleven citations checked. Nine are carried. Two in the hardening paragraph are implied rather than stated; I have marked both in the brief.",
+            "marks": []
+          }
+        ],
+        "state": "complete"
+      }
+    ]
+  },
+  {
+    "_id": "threadParts:task-citations-22-1",
+    "_creationTime": 1788553800000,
+    "projectId": "default",
+    "threadId": "threads:task-citations-22",
+    "part": 1,
+    "messages": [
+      {
+        "id": "m-citations-22-0",
+        "role": "prompt",
+        "author": {
+          "kind": "system"
+        },
+        "sentAt": 1788553800000,
+        "blocks": [
+          {
+            "id": "m-citations-22-0-b",
+            "type": "text",
+            "variant": "paragraph",
+            "atoms": [
+              {
+                "id": "m-citations-22-0-b-a",
+                "kind": "literal",
+                "text": "For every citation in the Winter readiness brief, confirm the source carries the claim. Flag anything the source only implies."
+              }
+            ],
+            "display": "For every citation in the Winter readiness brief, confirm the source carries the claim. Flag anything the source only implies.",
+            "marks": []
+          }
+        ],
+        "state": "complete"
+      }
+    ]
+  },
+  {
+    "_id": "threadParts:task-citations-21-1",
+    "_creationTime": 1788379200000,
+    "projectId": "default",
+    "threadId": "threads:task-citations-21",
+    "part": 1,
+    "messages": [
+      {
+        "id": "m-citations-21-0",
+        "role": "prompt",
+        "author": {
+          "kind": "system"
+        },
+        "sentAt": 1788379200000,
+        "blocks": [
+          {
+            "id": "m-citations-21-0-b",
+            "type": "text",
+            "variant": "paragraph",
+            "atoms": [
+              {
+                "id": "m-citations-21-0-b-a",
+                "kind": "literal",
+                "text": "For every citation in the Winter readiness brief, confirm the source carries the claim. Flag anything the source only implies."
+              }
+            ],
+            "display": "For every citation in the Winter readiness brief, confirm the source carries the claim. Flag anything the source only implies.",
+            "marks": []
+          }
+        ],
+        "state": "complete"
+      }
+    ]
+  },
+  {
+    "_id": "threadParts:task-glossary-6-1",
+    "_creationTime": 1788559200000,
+    "projectId": "default",
+    "threadId": "threads:task-glossary-6",
+    "part": 1,
+    "messages": [
+      {
+        "id": "m-glossary-6-0",
+        "role": "prompt",
+        "author": {
+          "kind": "system"
+        },
+        "sentAt": 1788559200000,
+        "blocks": [
+          {
+            "id": "m-glossary-6-0-b",
+            "type": "text",
+            "variant": "paragraph",
+            "atoms": [
+              {
+                "id": "m-glossary-6-0-b-a",
+                "kind": "literal",
+                "text": "When a document is created, add any interconnect term it introduces to the glossary with the sentence that defines it."
+              }
+            ],
+            "display": "When a document is created, add any interconnect term it introduces to the glossary with the sentence that defines it.",
+            "marks": []
+          }
+        ],
+        "state": "complete"
+      }
+    ]
+  },
+  {
+    "_id": "threadParts:task-hardening-2-1",
+    "_creationTime": 1788386400000,
+    "projectId": "default",
+    "threadId": "threads:task-hardening-2",
+    "part": 1,
+    "messages": [
+      {
+        "id": "m-hardening-2-0",
+        "role": "prompt",
+        "author": {
+          "kind": "user",
+          "userId": "users:2"
+        },
+        "sentAt": 1788386400000,
+        "blocks": [
+          {
+            "id": "m-hardening-2-0-b",
+            "type": "text",
+            "variant": "paragraph",
+            "atoms": [
+              {
+                "id": "m-hardening-2-0-b-a",
+                "kind": "literal",
+                "text": "Re-run the hardening cost model against the current outage totals and report the three programmes whose cost moved the most."
+              }
+            ],
+            "display": "Re-run the hardening cost model against the current outage totals and report the three programmes whose cost moved the most.",
+            "marks": []
+          }
+        ],
+        "state": "complete"
+      }
+    ]
+  },
+  {
+    "_id": "threadParts:task-hardening-1-1",
+    "_creationTime": 1787436000000,
+    "projectId": "default",
+    "threadId": "threads:task-hardening-1",
+    "part": 1,
+    "messages": [
+      {
+        "id": "m-hardening-1-0",
+        "role": "prompt",
+        "author": {
+          "kind": "user",
+          "userId": "users:2"
+        },
+        "sentAt": 1787436000000,
+        "blocks": [
+          {
+            "id": "m-hardening-1-0-b",
+            "type": "text",
+            "variant": "paragraph",
+            "atoms": [
+              {
+                "id": "m-hardening-1-0-b-a",
+                "kind": "literal",
+                "text": "Re-run the hardening cost model against the current outage totals and report the three programmes whose cost moved the most."
+              }
+            ],
+            "display": "Re-run the hardening cost model against the current outage totals and report the three programmes whose cost moved the most.",
+            "marks": []
+          }
+        ],
+        "state": "complete"
+      }
+    ]
+  },
+  {
+    "_id": "threadParts:task-storm-1",
+    "_creationTime": 1788559200000,
+    "projectId": "default",
+    "threadId": "threads:task-storm",
+    "part": 1,
+    "messages": [
+      {
+        "id": "m-storm-0",
+        "role": "prompt",
+        "author": {
+          "kind": "user",
+          "userId": "users:2"
+        },
+        "sentAt": 1788559200000,
+        "blocks": [
+          {
+            "id": "m-storm-0-b",
+            "type": "text",
+            "variant": "paragraph",
+            "atoms": [
+              {
+                "id": "m-storm-0-b-a",
+                "kind": "literal",
+                "text": "Find how neighbouring utilities described winter storm hardening in their last two filings."
+              }
+            ],
+            "display": "Find how neighbouring utilities described winter storm hardening in their last two filings.",
+            "marks": []
+          }
+        ],
+        "state": "complete"
+      },
+      {
+        "id": "m-storm-1",
+        "role": "response",
+        "author": {
+          "kind": "agent",
+          "taskId": "agentTasks:storm"
+        },
+        "sentAt": 1788560040000,
+        "blocks": [
+          {
+            "id": "m-storm-1-b",
+            "type": "text",
+            "variant": "paragraph",
+            "atoms": [
+              {
+                "id": "m-storm-1-b-a",
+                "kind": "literal",
+                "text": "Six precedents. Two carry undergrounding programmes, and all six quote customer-minutes rather than outage counts."
+              }
+            ],
+            "display": "Six precedents. Two carry undergrounding programmes, and all six quote customer-minutes rather than outage counts.",
+            "marks": []
+          }
+        ],
+        "state": "complete"
+      }
+    ]
+  },
+  {
+    "_id": "threadParts:task-vegetation-1",
+    "_creationTime": 1788472800000,
+    "projectId": "default",
+    "threadId": "threads:task-vegetation",
+    "part": 1,
+    "messages": [
+      {
+        "id": "m-vegetation-0",
+        "role": "prompt",
+        "author": {
+          "kind": "user",
+          "userId": "default-user"
+        },
+        "sentAt": 1788472800000,
+        "blocks": [
+          {
+            "id": "m-vegetation-0-b",
+            "type": "text",
+            "variant": "paragraph",
+            "atoms": [
+              {
+                "id": "m-vegetation-0-b-a",
+                "kind": "literal",
+                "text": "Rebuild the vegetation-management comparison with this quarter's spans included."
+              }
+            ],
+            "display": "Rebuild the vegetation-management comparison with this quarter's spans included.",
+            "marks": []
+          }
+        ],
+        "state": "complete"
+      },
+      {
+        "id": "m-vegetation-1",
+        "role": "response",
+        "author": {
+          "kind": "agent",
+          "taskId": "agentTasks:vegetation"
+        },
+        "sentAt": 1788474000000,
+        "blocks": [
+          {
+            "id": "m-vegetation-1-b",
+            "type": "text",
+            "variant": "paragraph",
+            "atoms": [
+              {
+                "id": "m-vegetation-1-b-a",
+                "kind": "literal",
+                "text": "The span table changed shape while I was reading it. I stopped rather than guess which new column is the feeder."
+              }
+            ],
+            "display": "The span table changed shape while I was reading it. I stopped rather than guess which new column is the feeder.",
+            "marks": []
+          }
+        ],
+        "state": "complete"
+      }
+    ]
+  },
+  {
+    "_id": "threadParts:task-objections-1",
+    "_creationTime": 1788127200000,
+    "projectId": "default",
+    "threadId": "threads:task-objections",
+    "part": 1,
+    "messages": [
+      {
+        "id": "m-objections-0",
+        "role": "prompt",
+        "author": {
+          "kind": "user",
+          "userId": "default-user"
+        },
+        "sentAt": 1788127200000,
+        "blocks": [
+          {
+            "id": "m-objections-0-b",
+            "type": "text",
+            "variant": "paragraph",
+            "atoms": [
+              {
+                "id": "m-objections-0-b-a",
+                "kind": "literal",
+                "text": "Take the undergrounding case at its strongest and list the objections a commissioner would raise, each with what would answer it."
+              }
+            ],
+            "display": "Take the undergrounding case at its strongest and list the objections a commissioner would raise, each with what would answer it.",
+            "marks": []
+          }
+        ],
+        "state": "complete"
+      }
+    ]
+  },
+  {
+    "_id": "threadParts:task-budget-1",
+    "_creationTime": 1786831200000,
+    "projectId": "default",
+    "threadId": "threads:task-budget",
+    "part": 1,
+    "messages": [
+      {
+        "id": "m-budget-0",
+        "role": "prompt",
+        "author": {
+          "kind": "user",
+          "userId": "users:1"
+        },
+        "sentAt": 1786831200000,
+        "blocks": [
+          {
+            "id": "m-budget-0-b",
+            "type": "text",
+            "variant": "paragraph",
+            "atoms": [
+              {
+                "id": "m-budget-0-b-a",
+                "kind": "literal",
+                "text": "Find the weakest premise behind the 46,000,000 hardening budget and say what would have to be shown to save it."
+              }
+            ],
+            "display": "Find the weakest premise behind the 46,000,000 hardening budget and say what would have to be shown to save it.",
+            "marks": []
+          }
+        ],
+        "state": "complete"
+      }
+    ]
+  },
+  {
+    "_id": "threadParts:chat-priorities-1",
+    "_creationTime": 1788558000000,
+    "projectId": "default",
+    "threadId": "threads:chat-priorities",
+    "part": 1,
+    "messages": [
+      {
+        "id": "m-chat-priorities-0",
+        "role": "prompt",
+        "author": {
+          "kind": "user",
+          "userId": "default-user"
+        },
+        "sentAt": 1788558000000,
+        "blocks": [
+          {
+            "id": "m-chat-priorities-0-b",
+            "type": "text",
+            "variant": "paragraph",
+            "atoms": [
+              {
+                "id": "m-chat-priorities-0-b-a",
+                "kind": "literal",
+                "text": "What does the readiness brief identify as the binding constraint?"
+              }
+            ],
+            "display": "What does the readiness brief identify as the binding constraint?",
+            "marks": []
+          }
+        ],
+        "state": "complete"
+      },
+      {
+        "id": "m-chat-priorities-1",
+        "role": "response",
+        "author": {
+          "kind": "system"
+        },
+        "sentAt": 1788558300000,
+        "blocks": [
+          {
+            "id": "m-chat-priorities-1-b",
+            "type": "text",
+            "variant": "paragraph",
+            "atoms": [
+              {
+                "id": "m-chat-priorities-1-b-a",
+                "kind": "literal",
+                "text": "Substation 14 is the binding constraint. Its transformer bank was derated in September after the oil analysis came back."
+              }
+            ],
+            "display": "Substation 14 is the binding constraint. Its transformer bank was derated in September after the oil analysis came back.",
+            "marks": []
+          }
+        ],
+        "state": "complete"
+      },
+      {
+        "id": "m-chat-priorities-2",
+        "role": "prompt",
+        "author": {
+          "kind": "user",
+          "userId": "default-user"
+        },
+        "sentAt": 1788558600000,
+        "blocks": [
+          {
+            "id": "m-chat-priorities-2-b",
+            "type": "text",
+            "variant": "paragraph",
+            "atoms": [
+              {
+                "id": "m-chat-priorities-2-b-a",
+                "kind": "literal",
+                "text": "Why do the two feeder alternatives not remove that exposure?"
+              }
+            ],
+            "display": "Why do the two feeder alternatives not remove that exposure?",
+            "marks": []
+          }
+        ],
+        "state": "complete"
+      },
+      {
+        "id": "m-chat-priorities-3",
+        "role": "response",
+        "author": {
+          "kind": "system"
+        },
+        "sentAt": 1788558900000,
+        "blocks": [
+          {
+            "id": "m-chat-priorities-3-b",
+            "type": "text",
+            "variant": "paragraph",
+            "atoms": [
+              {
+                "id": "m-chat-priorities-3-b-a",
+                "kind": "literal",
+                "text": "Both feeders run through the same corridor, so a fault on either leaves the northern ring supplied from one direction only."
+              }
+            ],
+            "display": "Both feeders run through the same corridor, so a fault on either leaves the northern ring supplied from one direction only.",
+            "marks": []
+          }
+        ],
+        "state": "complete"
+      }
+    ]
+  },
+  {
+    "_id": "threadParts:chat-tone-1",
+    "_creationTime": 1788472200000,
+    "projectId": "default",
+    "threadId": "threads:chat-tone",
+    "part": 1,
+    "messages": [
+      {
+        "id": "m-chat-tone-0",
+        "role": "prompt",
+        "author": {
+          "kind": "user",
+          "userId": "users:1"
+        },
+        "sentAt": 1788472200000,
+        "blocks": [
+          {
+            "id": "m-chat-tone-0-b",
+            "type": "text",
+            "variant": "paragraph",
+            "atoms": [
+              {
+                "id": "m-chat-tone-0-b-a",
+                "kind": "literal",
+                "text": "What does the replacement decision actually recommend?"
+              }
+            ],
+            "display": "What does the replacement decision actually recommend?",
+            "marks": []
+          }
+        ],
+        "state": "complete"
+      },
+      {
+        "id": "m-chat-tone-1",
+        "role": "response",
+        "author": {
+          "kind": "system"
+        },
+        "sentAt": 1788472500000,
+        "blocks": [
+          {
+            "id": "m-chat-tone-1-b",
+            "type": "text",
+            "variant": "paragraph",
+            "atoms": [
+              {
+                "id": "m-chat-tone-1-b-a",
+                "kind": "literal",
+                "text": "It recommends authorizing the accelerated replacement window and reserving the mobile bank until commissioning tests close."
+              }
+            ],
+            "display": "It recommends authorizing the accelerated replacement window and reserving the mobile bank until commissioning tests close.",
+            "marks": []
+          }
+        ],
+        "state": "complete"
+      }
+    ]
+  },
+  {
+    "_id": "threadParts:chat-sources-1",
+    "_creationTime": 1788212700000,
+    "projectId": "default",
+    "threadId": "threads:chat-sources",
+    "part": 1,
+    "messages": [
+      {
+        "id": "m-chat-sources-0",
+        "role": "prompt",
+        "author": {
+          "kind": "user",
+          "userId": "users:3"
+        },
+        "sentAt": 1788212700000,
+        "blocks": [
+          {
+            "id": "m-chat-sources-0-b",
+            "type": "text",
+            "variant": "paragraph",
+            "atoms": [
+              {
+                "id": "m-chat-sources-0-b-a",
+                "kind": "literal",
+                "text": "Can we cite a NERC winter review from this project?"
+              }
+            ],
+            "display": "Can we cite a NERC winter review from this project?",
+            "marks": []
+          }
+        ],
+        "state": "complete"
+      },
+      {
+        "id": "m-chat-sources-1",
+        "role": "response",
+        "author": {
+          "kind": "system"
+        },
+        "sentAt": 1788213000000,
+        "blocks": [
+          {
+            "id": "m-chat-sources-1-b",
+            "type": "text",
+            "variant": "paragraph",
+            "atoms": [
+              {
+                "id": "m-chat-sources-1-b-a",
+                "kind": "literal",
+                "text": "Nothing in this project answers that. Try naming the resource you have in mind, or ask something narrower."
+              }
+            ],
+            "display": "Nothing in this project answers that. Try naming the resource you have in mind, or ask something narrower.",
+            "marks": []
+          }
+        ],
+        "state": "complete"
+      },
+      {
+        "id": "m-chat-sources-2",
+        "role": "prompt",
+        "author": {
+          "kind": "user",
+          "userId": "users:3"
+        },
+        "sentAt": 1788213300000,
+        "blocks": [
+          {
+            "id": "m-chat-sources-2-b",
+            "type": "text",
+            "variant": "paragraph",
+            "atoms": [
+              {
+                "id": "m-chat-sources-2-b-a",
+                "kind": "literal",
+                "text": "Then cite page 31 anyway."
+              }
+            ],
+            "display": "Then cite page 31 anyway.",
+            "marks": []
+          }
+        ],
+        "state": "complete"
+      }
+    ]
+  },
+  {
+    "_id": "threadParts:chat-undergrounding-1",
+    "_creationTime": 1787867400000,
+    "projectId": "default",
+    "threadId": "threads:chat-undergrounding",
+    "part": 1,
+    "messages": [
+      {
+        "id": "m-chat-undergrounding-0",
+        "role": "prompt",
+        "author": {
+          "kind": "user",
+          "userId": "default-user"
+        },
+        "sentAt": 1787867400000,
+        "blocks": [
+          {
+            "id": "m-chat-undergrounding-0-b",
+            "type": "text",
+            "variant": "paragraph",
+            "atoms": [
+              {
+                "id": "m-chat-undergrounding-0-b-a",
+                "kind": "literal",
+                "text": "What does the storm-hardening presentation say about undergrounding?"
+              }
+            ],
+            "display": "What does the storm-hardening presentation say about undergrounding?",
+            "marks": []
+          }
+        ],
+        "state": "complete"
+      },
+      {
+        "id": "m-chat-undergrounding-1",
+        "role": "response",
+        "author": {
+          "kind": "system"
+        },
+        "sentAt": 1787867700000,
+        "blocks": [
+          {
+            "id": "m-chat-undergrounding-1-b",
+            "type": "text",
+            "variant": "paragraph",
+            "atoms": [
+              {
+                "id": "m-chat-undergrounding-1-b-a",
+                "kind": "literal",
+                "text": "It reserves targeted undergrounding for the four highest-consequence segments."
+              }
+            ],
+            "display": "It reserves targeted undergrounding for the four highest-consequence segments.",
+            "marks": []
+          }
+        ],
+        "state": "complete"
+      }
+    ]
+  },
+  {
+    "_id": "threadParts:chat-feeder12-history-1",
+    "_creationTime": 1787608200000,
+    "projectId": "default",
+    "threadId": "threads:chat-feeder12-history",
+    "part": 1,
+    "messages": [
+      {
+        "id": "m-chat-feeder12-history-0",
+        "role": "prompt",
+        "author": {
+          "kind": "user",
+          "userId": "users:2"
+        },
+        "sentAt": 1787608200000,
+        "blocks": [
+          {
+            "id": "m-chat-feeder12-history-0-b",
+            "type": "text",
+            "variant": "paragraph",
+            "atoms": [
+              {
+                "id": "m-chat-feeder12-history-0-b-a",
+                "kind": "literal",
+                "text": "What does the outage workbook record for Feeder 12?"
+              }
+            ],
+            "display": "What does the outage workbook record for Feeder 12?",
+            "marks": []
+          }
+        ],
+        "state": "complete"
+      },
+      {
+        "id": "m-chat-feeder12-history-1",
+        "role": "response",
+        "author": {
+          "kind": "system"
+        },
+        "sentAt": 1787608500000,
+        "blocks": [
+          {
+            "id": "m-chat-feeder12-history-1-b",
+            "type": "text",
+            "variant": "paragraph",
+            "atoms": [
+              {
+                "id": "m-chat-feeder12-history-1-b-a",
+                "kind": "literal",
+                "text": "The workbook records that recloser mis-coordination is under review."
+              }
+            ],
+            "display": "The workbook records that recloser mis-coordination is under review.",
+            "marks": []
+          }
+        ],
+        "state": "complete"
+      }
+    ]
+  }
+]

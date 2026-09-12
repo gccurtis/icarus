@@ -1,0 +1,487 @@
+[
+  {
+    "_id": "documentSnapshots:1",
+    "_creationTime": 1785312000000,
+    "projectId": "default",
+    "resourceId": "documents:1",
+    "revision": 1,
+    "role": "leader",
+    "part": 0,
+    "at": 1788299760000,
+    "body": {
+      "pageSetup": {
+        "paper": "letter",
+        "orientation": "portrait",
+        "margins": { "top": 0.75, "right": 0.75, "bottom": 0.75, "left": 0.75 }
+      },
+      "styles": {
+        "defaultKey": "body",
+        "styles": {
+          "body": {
+            "name": "Body",
+            "fontFamily": "IBM Plex Sans",
+            "fontSize": 16,
+            "fontWeight": 400,
+            "lineHeight": 26,
+            "spaceBefore": 0,
+            "spaceAfter": 16
+          },
+          "heading-1": {
+            "name": "Heading 1",
+            "fontFamily": "IBM Plex Sans",
+            "fontSize": 28,
+            "fontWeight": 600,
+            "lineHeight": 34,
+            "spaceBefore": 0,
+            "spaceAfter": 12
+          },
+          "heading-2": {
+            "name": "Heading 2",
+            "fontFamily": "IBM Plex Sans",
+            "fontSize": 22,
+            "fontWeight": 600,
+            "lineHeight": 28,
+            "spaceBefore": 20,
+            "spaceAfter": 8
+          },
+          "quote": {
+            "name": "Quote",
+            "fontFamily": "Iowan Old Style",
+            "fontSize": 17,
+            "italic": true,
+            "lineHeight": 27,
+            "indent": 24,
+            "spaceBefore": 8,
+            "spaceAfter": 16
+          },
+          "caption": {
+            "name": "Caption",
+            "fontFamily": "IBM Plex Mono",
+            "fontSize": 12,
+            "fontWeight": 400,
+            "lineHeight": 16,
+            "spaceBefore": 0,
+            "spaceAfter": 12
+          }
+        }
+      },
+      "rows": [
+        {
+          "id": "#rtitle",
+          "kind": "blocks",
+          "blocks": [
+            {
+              "id": "#btitle",
+              "type": "text",
+              "variant": "heading",
+              "level": 1,
+              "style": "heading-1",
+              "atoms": [{ "id": "#atitle", "kind": "literal", "text": "Winter readiness brief" }],
+              "display": "Winter readiness brief",
+              "marks": []
+            }
+          ]
+        },
+        {
+          "id": "#rdate",
+          "kind": "blocks",
+          "blocks": [
+            {
+              "id": "#bdate",
+              "type": "text",
+              "variant": "paragraph",
+              "style": "caption",
+              "atoms": [{ "id": "#adate", "kind": "literal", "text": "Revised 4 February" }],
+              "display": "Revised 4 February",
+              "marks": []
+            }
+          ]
+        },
+        {
+          "id": "#rlead",
+          "kind": "blocks",
+          "blocks": [
+            {
+              "id": "#blead",
+              "type": "text",
+              "variant": "paragraph",
+              "atoms": [
+                {
+                  "id": "#alead",
+                  "kind": "literal",
+                  "text": "Peak demand on the western interconnect is forecast to exceed last winter's record by four percent, and two of the three substations that carried that peak have since been derated. This brief sets out where the exposure sits, what it would cost to close, and which of those costs are already committed."
+                }
+              ],
+              "display": "Peak demand on the western interconnect is forecast to exceed last winter's record by four percent, and two of the three substations that carried that peak have since been derated. This brief sets out where the exposure sits, what it would cost to close, and which of those costs are already committed.",
+              "marks": [
+                {
+                  "id": "#mforecast",
+                  "from": { "atom": "#alead", "offset": 86 },
+                  "to": { "atom": "#alead", "offset": 98 },
+                  "color": "#92400E",
+                  "background": "#FEF3C7"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "#rexposure",
+          "kind": "blocks",
+          "blocks": [
+            {
+              "id": "#bexposure",
+              "type": "text",
+              "variant": "heading",
+              "level": 2,
+              "style": "heading-2",
+              "atoms": [{ "id": "#aexposure", "kind": "literal", "text": "Where the exposure sits" }],
+              "display": "Where the exposure sits",
+              "marks": []
+            }
+          ]
+        },
+        {
+          "id": "#rbody1",
+          "kind": "blocks",
+          "blocks": [
+            {
+              "id": "#bbody1",
+              "type": "text",
+              "variant": "paragraph",
+              "atoms": [
+                {
+                  "id": "#abody1",
+                  "kind": "literal",
+                  "text": "Substation 14 is the binding constraint. Its transformer bank was derated in September after the oil analysis came back, and the two feeders that would otherwise pick up its load both run through the same corridor, so a fault on either leaves the northern ring supplied from one direction only. The corridor itself is scheduled for reconductoring but not until the following summer, which puts the whole of this winter inside the window."
+                }
+              ],
+              "display": "Substation 14 is the binding constraint. Its transformer bank was derated in September after the oil analysis came back, and the two feeders that would otherwise pick up its load both run through the same corridor, so a fault on either leaves the northern ring supplied from one direction only. The corridor itself is scheduled for reconductoring but not until the following summer, which puts the whole of this winter inside the window.",
+              "marks": []
+            }
+          ]
+        },
+        {
+          "id": "#rbody2",
+          "kind": "blocks",
+          "blocks": [
+            {
+              "id": "#bbody2",
+              "type": "text",
+              "variant": "paragraph",
+              "atoms": [
+                {
+                  "id": "#abody2",
+                  "kind": "literal",
+                  "text": "The second concentration is behind the coastal tie. Nothing there has been derated, but the tie has carried an unplanned outage in each of the last three winters and the spares position for its breakers is one deep. That is a different kind of risk from the first and does not respond to the same money."
+                }
+              ],
+              "display": "The second concentration is behind the coastal tie. Nothing there has been derated, but the tie has carried an unplanned outage in each of the last three winters and the spares position for its breakers is one deep. That is a different kind of risk from the first and does not respond to the same money.",
+              "marks": []
+            }
+          ]
+        },
+        {
+          "id": "#rbreak",
+          "kind": "pageBreak"
+        },
+        {
+          "id": "#rcost",
+          "kind": "blocks",
+          "blocks": [
+            {
+              "id": "#bcost",
+              "type": "text",
+              "variant": "heading",
+              "level": 2,
+              "style": "heading-2",
+              "atoms": [{ "id": "#acost", "kind": "literal", "text": "What it would cost" }],
+              "display": "What it would cost",
+              "marks": []
+            }
+          ]
+        },
+        {
+          "id": "#rbody3",
+          "kind": "blocks",
+          "blocks": [
+            {
+              "id": "#bbody3",
+              "type": "text",
+              "variant": "paragraph",
+              "atoms": [
+                {
+                  "id": "#abody3",
+                  "kind": "literal",
+                  "text": "Bringing the reconductoring forward by a season is the single largest line and the only one that closes the first exposure outright. Everything else on the list buys time rather than headroom."
+                }
+              ],
+              "display": "Bringing the reconductoring forward by a season is the single largest line and the only one that closes the first exposure outright. Everything else on the list buys time rather than headroom.",
+              "marks": [
+                {
+                  "id": "#mreconductoring",
+                  "from": { "atom": "#abody3", "offset": 13 },
+                  "to": { "atom": "#abody3", "offset": 27 },
+                  "style": ["underline"],
+                  "link": {
+                    "kind": "url",
+                    "url": "https://example.com/grid/reconductoring",
+                    "note": "Engineering scope and seasonal construction assumptions."
+                  },
+                  "color": "#1D4ED8"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "#rquote",
+          "kind": "blocks",
+          "blocks": [
+            {
+              "id": "#bquote",
+              "type": "text",
+              "variant": "quote",
+              "style": "quote",
+              "atoms": [
+                {
+                  "id": "#aquote",
+                  "kind": "literal",
+                  "text": "We are not short of capacity. We are short of the ability to move it when one thing fails."
+                }
+              ],
+              "display": "We are not short of capacity. We are short of the ability to move it when one thing fails.",
+              "marks": []
+            }
+          ]
+        }
+      ],
+      "header": {
+        "distanceFromEdge": 0.4,
+        "rows": [
+          {
+            "id": "#rheader",
+            "kind": "blocks",
+            "blocks": [
+              {
+                "id": "#bheader",
+                "type": "text",
+                "variant": "paragraph",
+                "style": "caption",
+                "atoms": [
+                  { "id": "#aheader", "kind": "literal", "text": "Operations / Winter readiness" }
+                ],
+                "display": "Operations / Winter readiness",
+                "marks": []
+              }
+            ]
+          }
+        ]
+      },
+      "footer": {
+        "distanceFromEdge": 0.4,
+        "pageNumber": { "position": "end", "hideOnFirstPage": true },
+        "rows": [
+          {
+            "id": "#rfooter",
+            "kind": "blocks",
+            "blocks": [
+              {
+                "id": "#bfooter",
+                "type": "text",
+                "variant": "paragraph",
+                "style": "caption",
+                "atoms": [
+                  { "id": "#afooter", "kind": "literal", "text": "Internal readiness review" }
+                ],
+                "display": "Internal readiness review",
+                "marks": []
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "_id": "documentSnapshots:2",
+    "_creationTime": 1784707200000,
+    "projectId": "default",
+    "resourceId": "documents:2",
+    "revision": 1,
+    "role": "leader",
+    "part": 0,
+    "at": 1788213600000,
+    "body": {
+      "pageSetup": { "paper": "letter", "orientation": "portrait", "margins": { "top": 0.75, "right": 0.8, "bottom": 0.75, "left": 0.8 } },
+      "styles": {
+        "defaultKey": "body",
+        "styles": {
+          "title": { "name": "Title", "fontFamily": "IBM Plex Sans", "fontSize": 28, "fontWeight": 650, "color": "--token-ink-primary" },
+          "body": { "name": "Body", "fontFamily": "IBM Plex Sans", "fontSize": 11, "color": "--token-ink-primary", "lineHeight": 16.5 }
+        }
+      },
+      "rows": [
+        {
+          "id": "#incident-live-title-row",
+          "kind": "blocks",
+          "blocks": [
+            {
+              "id": "#incident-live-title",
+              "type": "text",
+              "variant": "heading",
+              "level": 1,
+              "style": "title",
+              "atoms": [{ "id": "#incident-live-title-a", "kind": "literal", "text": "Substation 14 incident write-up" }],
+              "display": "Substation 14 incident write-up",
+              "marks": []
+            }
+          ]
+        },
+        {
+          "id": "#incident-live-summary-row",
+          "kind": "blocks",
+          "blocks": [
+            {
+              "id": "#incident-live-summary",
+              "type": "text",
+              "variant": "paragraph",
+              "style": "body",
+              "atoms": [{ "id": "#incident-live-summary-a", "kind": "literal", "text": "Protection isolated the transformer bank at 14:18 after dissolved-gas alarms crossed the operating threshold. Operators transferred critical load within eleven minutes; no safety event occurred." }],
+              "display": "Protection isolated the transformer bank at 14:18 after dissolved-gas alarms crossed the operating threshold. Operators transferred critical load within eleven minutes; no safety event occurred.",
+              "marks": []
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "_id": "documentSnapshots:3",
+    "_creationTime": 1783497600000,
+    "projectId": "default",
+    "resourceId": "documents:3",
+    "revision": 1,
+    "role": "leader",
+    "part": 0,
+    "at": 1787954400000,
+    "body": {
+      "pageSetup": { "paper": "a4", "orientation": "portrait", "margins": { "top": 0.7, "right": 0.75, "bottom": 0.7, "left": 0.75 } },
+      "styles": {
+        "defaultKey": "body",
+        "styles": {
+          "title": { "name": "Title", "fontFamily": "IBM Plex Sans", "fontSize": 28, "fontWeight": 650, "color": "--token-ink-primary" },
+          "term": { "name": "Term", "fontFamily": "IBM Plex Sans", "fontSize": 13, "fontWeight": 650, "color": "--token-color-accent-1-text" },
+          "body": { "name": "Body", "fontFamily": "IBM Plex Sans", "fontSize": 11, "color": "--token-ink-primary", "lineHeight": 15.95 }
+        }
+      },
+      "rows": [
+        {
+          "id": "#glossary-live-title-row",
+          "kind": "blocks",
+          "blocks": [
+            {
+              "id": "#glossary-live-title",
+              "type": "text",
+              "variant": "heading",
+              "level": 1,
+              "style": "title",
+              "atoms": [{ "id": "#glossary-live-title-a", "kind": "literal", "text": "Interconnect glossary" }],
+              "display": "Interconnect glossary",
+              "marks": []
+            }
+          ]
+        },
+        {
+          "id": "#glossary-live-term-row",
+          "kind": "blocks",
+          "blocks": [
+            {
+              "id": "#glossary-live-term",
+              "type": "text",
+              "variant": "heading",
+              "level": 2,
+              "style": "term",
+              "atoms": [{ "id": "#glossary-live-term-a", "kind": "literal", "text": "Available transfer capability" }],
+              "display": "Available transfer capability",
+              "marks": []
+            },
+            {
+              "id": "#glossary-live-definition",
+              "type": "text",
+              "variant": "paragraph",
+              "style": "body",
+              "atoms": [{ "id": "#glossary-live-definition-a", "kind": "literal", "text": "The remaining transfer capability of the transmission network after committed uses and reliability margins are accounted for." }],
+              "display": "The remaining transfer capability of the transmission network after committed uses and reliability margins are accounted for.",
+              "marks": []
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "_id": "documentSnapshots:4",
+    "_creationTime": 1788111000000,
+    "projectId": "default",
+    "resourceId": "documents:4",
+    "revision": 1,
+    "role": "leader",
+    "part": 0,
+    "at": 1788460800000,
+    "body": {
+      "pageSetup": { "paper": "letter", "orientation": "portrait", "margins": { "top": 0.7, "right": 0.8, "bottom": 0.7, "left": 0.8 } },
+      "styles": {
+        "defaultKey": "body",
+        "styles": {
+          "title": { "name": "Title", "fontFamily": "IBM Plex Sans", "fontSize": 28, "fontWeight": 650, "color": "--token-ink-primary" },
+          "heading": { "name": "Heading", "fontFamily": "IBM Plex Sans", "fontSize": 15, "fontWeight": 650, "color": "--token-ink-primary", "spaceBefore": 14 },
+          "body": { "name": "Body", "fontFamily": "IBM Plex Sans", "fontSize": 11, "color": "--token-ink-primary", "lineHeight": 16.5 }
+        }
+      },
+      "rows": [
+        {
+          "id": "#decision-live-title-row",
+          "kind": "blocks",
+          "blocks": [
+            {
+              "id": "#decision-live-title",
+              "type": "text",
+              "variant": "heading",
+              "level": 1,
+              "style": "title",
+              "atoms": [{ "id": "#decision-live-title-a", "kind": "literal", "text": "Transformer bank replacement decision" }],
+              "display": "Transformer bank replacement decision",
+              "marks": []
+            }
+          ]
+        },
+        {
+          "id": "#decision-live-recommendation-row",
+          "kind": "blocks",
+          "blocks": [
+            {
+              "id": "#decision-live-recommendation-heading",
+              "type": "text",
+              "variant": "heading",
+              "level": 2,
+              "style": "heading",
+              "atoms": [{ "id": "#decision-live-recommendation-heading-a", "kind": "literal", "text": "Recommendation" }],
+              "display": "Recommendation",
+              "marks": []
+            },
+            {
+              "id": "#decision-live-recommendation",
+              "type": "text",
+              "variant": "paragraph",
+              "style": "body",
+              "atoms": [{ "id": "#decision-live-recommendation-a", "kind": "literal", "text": "Authorize the accelerated replacement window and reserve the mobile bank until commissioning tests close. The premium preserves winter contingency and avoids a second planned outage." }],
+              "display": "Authorize the accelerated replacement window and reserve the mobile bank until commissioning tests close. The premium preserves winter contingency and avoids a second planned outage.",
+              "marks": []
+            }
+          ]
+        }
+      ]
+    }
+  }
+]

@@ -1,0 +1,32 @@
+# Semantic Overlay behavior. Credentials remain in git-ignored local.yaml.
+semanticOverlay:
+  embedding:
+    api: jina
+    jina:
+      endpoint: https://api.jina.ai/v1/embeddings
+      model: jina-embeddings-v4
+      dimensions: 512
+      timeoutMs: 90000
+
+  translation:
+    maxTokens: 320
+    minTokens: 6
+    changeThreshold: 0.28
+    basinProminenceThreshold: 0.02
+    basinMassFraction: 0.04
+    attractionDecayTokens: 2
+    attractionStationaryThreshold: 0.005
+
+  index:
+    branchFactor: 8
+    leafSize: 32
+    maxIterations: 24
+    convergenceTolerance: 0.0001
+    candidateMultiplier: 8
+
+  materials:
+    # Deterministic identity/profile facets always publish. Structured model
+    # descriptions add recall for significant materials and are content-addressed.
+    generateDescriptors: true
+    # External image bytes are ephemeral provider input and never enter a row.
+    maxNativeImageBytes: 50000000

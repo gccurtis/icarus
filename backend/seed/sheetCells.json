@@ -1,0 +1,3443 @@
+[
+  {
+    "_id": "sheetCells:1",
+    "_creationTime": 1785916801000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r1",
+    "columnId": "c1",
+    "rowOrder": 1,
+    "value": {
+      "kind": "text",
+      "value": "Outage minutes by substation, FY26 to date"
+    },
+    "mergedTo": {
+      "rowId": "r1",
+      "columnId": "c6"
+    }
+  },
+  {
+    "_id": "sheetCells:2",
+    "_creationTime": 1785916802000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r2",
+    "columnId": "c1",
+    "rowOrder": 2,
+    "value": {
+      "kind": "text",
+      "value": "Source: OMS export, 30 August 2026. Minutes are customer-weighted."
+    }
+  },
+  {
+    "_id": "sheetCells:3",
+    "_creationTime": 1785916803000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r3",
+    "columnId": "c1",
+    "rowOrder": 3,
+    "value": {
+      "kind": "text",
+      "value": "Substation"
+    }
+  },
+  {
+    "_id": "sheetCells:4",
+    "_creationTime": 1785916804000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r3",
+    "columnId": "c2",
+    "rowOrder": 3,
+    "value": {
+      "kind": "text",
+      "value": "Feeder"
+    }
+  },
+  {
+    "_id": "sheetCells:5",
+    "_creationTime": 1785916805000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r3",
+    "columnId": "c3",
+    "rowOrder": 3,
+    "value": {
+      "kind": "text",
+      "value": "Customers"
+    }
+  },
+  {
+    "_id": "sheetCells:6",
+    "_creationTime": 1785916806000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r3",
+    "columnId": "c4",
+    "rowOrder": 3,
+    "value": {
+      "kind": "text",
+      "value": "Outages"
+    }
+  },
+  {
+    "_id": "sheetCells:7",
+    "_creationTime": 1785916807000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r3",
+    "columnId": "c5",
+    "rowOrder": 3,
+    "value": {
+      "kind": "text",
+      "value": "Minutes"
+    }
+  },
+  {
+    "_id": "sheetCells:8",
+    "_creationTime": 1785916808000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r3",
+    "columnId": "c6",
+    "rowOrder": 3,
+    "value": {
+      "kind": "text",
+      "value": "SAIDI"
+    }
+  },
+  {
+    "_id": "sheetCells:9",
+    "_creationTime": 1785916809000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r3",
+    "columnId": "c7",
+    "rowOrder": 3,
+    "value": {
+      "kind": "text",
+      "value": "Avg restore (min)"
+    }
+  },
+  {
+    "_id": "sheetCells:10",
+    "_creationTime": 1785916810000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r3",
+    "columnId": "c8",
+    "rowOrder": 3,
+    "value": {
+      "kind": "text",
+      "value": "Cost per minute"
+    }
+  },
+  {
+    "_id": "sheetCells:11",
+    "_creationTime": 1785916811000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r3",
+    "columnId": "c9",
+    "rowOrder": 3,
+    "value": {
+      "kind": "text",
+      "value": "Outage cost"
+    }
+  },
+  {
+    "_id": "sheetCells:12",
+    "_creationTime": 1785916812000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r3",
+    "columnId": "c10",
+    "rowOrder": 3,
+    "value": {
+      "kind": "text",
+      "value": "Hardening tier"
+    }
+  },
+  {
+    "_id": "sheetCells:13",
+    "_creationTime": 1785916813000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r3",
+    "columnId": "c11",
+    "rowOrder": 3,
+    "value": {
+      "kind": "text",
+      "value": "Notes"
+    }
+  },
+  {
+    "_id": "sheetCells:14",
+    "_creationTime": 1785916814000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r4",
+    "columnId": "c1",
+    "rowOrder": 4,
+    "value": {
+      "kind": "text",
+      "value": "Ashgrove"
+    }
+  },
+  {
+    "_id": "sheetCells:15",
+    "_creationTime": 1785916815000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r4",
+    "columnId": "c2",
+    "rowOrder": 4,
+    "value": {
+      "kind": "text",
+      "value": "AG-12"
+    }
+  },
+  {
+    "_id": "sheetCells:16",
+    "_creationTime": 1785916816000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r4",
+    "columnId": "c3",
+    "rowOrder": 4,
+    "value": {
+      "kind": "number",
+      "value": 4180
+    }
+  },
+  {
+    "_id": "sheetCells:17",
+    "_creationTime": 1785916817000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r4",
+    "columnId": "c4",
+    "rowOrder": 4,
+    "value": {
+      "kind": "number",
+      "value": 7
+    }
+  },
+  {
+    "_id": "sheetCells:18",
+    "_creationTime": 1785916818000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r4",
+    "columnId": "c5",
+    "rowOrder": 4,
+    "value": {
+      "kind": "number",
+      "value": 1610
+    }
+  },
+  {
+    "_id": "sheetCells:19",
+    "_creationTime": 1785916819000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r4",
+    "columnId": "c6",
+    "rowOrder": 4,
+    "value": {
+      "kind": "number",
+      "value": 23.11004784688995
+    },
+    "expression": "=`cell|spreadsheets:1|r4|c5`*60/`cell|spreadsheets:1|r4|c3`",
+    "anchors": [
+      "",
+      ""
+    ]
+  },
+  {
+    "_id": "sheetCells:20",
+    "_creationTime": 1785916820000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r4",
+    "columnId": "c7",
+    "rowOrder": 4,
+    "value": {
+      "kind": "number",
+      "value": 230
+    }
+  },
+  {
+    "_id": "sheetCells:21",
+    "_creationTime": 1785916821000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r4",
+    "columnId": "c8",
+    "rowOrder": 4,
+    "value": {
+      "kind": "number",
+      "value": 4.1
+    }
+  },
+  {
+    "_id": "sheetCells:22",
+    "_creationTime": 1785916822000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r4",
+    "columnId": "c9",
+    "rowOrder": 4,
+    "value": {
+      "kind": "number",
+      "value": 6601
+    },
+    "expression": "=`cell|spreadsheets:1|r4|c5`*`cell|spreadsheets:1|r4|c8`",
+    "anchors": [
+      "",
+      ""
+    ]
+  },
+  {
+    "_id": "sheetCells:23",
+    "_creationTime": 1785916823000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r4",
+    "columnId": "c10",
+    "rowOrder": 4,
+    "value": {
+      "kind": "text",
+      "value": "Tier 1"
+    }
+  },
+  {
+    "_id": "sheetCells:24",
+    "_creationTime": 1785916824000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r4",
+    "columnId": "c11",
+    "rowOrder": 4,
+    "value": {
+      "kind": "text",
+      "value": "Vegetation contact on the eastern lateral, twice"
+    }
+  },
+  {
+    "_id": "sheetCells:25",
+    "_creationTime": 1785916825000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r5",
+    "columnId": "c1",
+    "rowOrder": 5,
+    "value": {
+      "kind": "text",
+      "value": "Barrow Hill"
+    }
+  },
+  {
+    "_id": "sheetCells:26",
+    "_creationTime": 1785916826000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r5",
+    "columnId": "c2",
+    "rowOrder": 5,
+    "value": {
+      "kind": "text",
+      "value": "BH-03"
+    }
+  },
+  {
+    "_id": "sheetCells:27",
+    "_creationTime": 1785916827000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r5",
+    "columnId": "c3",
+    "rowOrder": 5,
+    "value": {
+      "kind": "number",
+      "value": 2960
+    }
+  },
+  {
+    "_id": "sheetCells:28",
+    "_creationTime": 1785916828000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r5",
+    "columnId": "c4",
+    "rowOrder": 5,
+    "value": {
+      "kind": "number",
+      "value": 3
+    }
+  },
+  {
+    "_id": "sheetCells:29",
+    "_creationTime": 1785916829000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r5",
+    "columnId": "c5",
+    "rowOrder": 5,
+    "value": {
+      "kind": "number",
+      "value": 412
+    }
+  },
+  {
+    "_id": "sheetCells:30",
+    "_creationTime": 1785916830000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r5",
+    "columnId": "c6",
+    "rowOrder": 5,
+    "value": {
+      "kind": "number",
+      "value": 8.35135135135135
+    },
+    "expression": "=`cell|spreadsheets:1|r5|c5`*60/`cell|spreadsheets:1|r5|c3`",
+    "anchors": [
+      "",
+      ""
+    ]
+  },
+  {
+    "_id": "sheetCells:31",
+    "_creationTime": 1785916831000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r5",
+    "columnId": "c7",
+    "rowOrder": 5,
+    "value": {
+      "kind": "number",
+      "value": 137
+    }
+  },
+  {
+    "_id": "sheetCells:32",
+    "_creationTime": 1785916832000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r5",
+    "columnId": "c8",
+    "rowOrder": 5,
+    "value": {
+      "kind": "number",
+      "value": 1.9
+    }
+  },
+  {
+    "_id": "sheetCells:33",
+    "_creationTime": 1785916833000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r5",
+    "columnId": "c9",
+    "rowOrder": 5,
+    "value": {
+      "kind": "number",
+      "value": 782.8
+    },
+    "expression": "=`cell|spreadsheets:1|r5|c5`*`cell|spreadsheets:1|r5|c8`",
+    "anchors": [
+      "",
+      ""
+    ]
+  },
+  {
+    "_id": "sheetCells:34",
+    "_creationTime": 1785916834000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r5",
+    "columnId": "c10",
+    "rowOrder": 5,
+    "value": {
+      "kind": "text",
+      "value": "Tier 3"
+    }
+  },
+  {
+    "_id": "sheetCells:35",
+    "_creationTime": 1785916835000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r6",
+    "columnId": "c1",
+    "rowOrder": 6,
+    "value": {
+      "kind": "text",
+      "value": "Coldwater"
+    }
+  },
+  {
+    "_id": "sheetCells:36",
+    "_creationTime": 1785916836000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r6",
+    "columnId": "c2",
+    "rowOrder": 6,
+    "value": {
+      "kind": "text",
+      "value": "CW-07"
+    }
+  },
+  {
+    "_id": "sheetCells:37",
+    "_creationTime": 1785916837000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r6",
+    "columnId": "c3",
+    "rowOrder": 6,
+    "value": {
+      "kind": "number",
+      "value": 6120
+    }
+  },
+  {
+    "_id": "sheetCells:38",
+    "_creationTime": 1785916838000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r6",
+    "columnId": "c4",
+    "rowOrder": 6,
+    "value": {
+      "kind": "number",
+      "value": 11
+    }
+  },
+  {
+    "_id": "sheetCells:39",
+    "_creationTime": 1785916839000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r6",
+    "columnId": "c5",
+    "rowOrder": 6,
+    "value": {
+      "kind": "number",
+      "value": 2985
+    }
+  },
+  {
+    "_id": "sheetCells:40",
+    "_creationTime": 1785916840000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r6",
+    "columnId": "c6",
+    "rowOrder": 6,
+    "value": {
+      "kind": "number",
+      "value": 29.264705882352942
+    },
+    "expression": "=`cell|spreadsheets:1|r6|c5`*60/`cell|spreadsheets:1|r6|c3`",
+    "anchors": [
+      "",
+      ""
+    ]
+  },
+  {
+    "_id": "sheetCells:41",
+    "_creationTime": 1785916841000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r6",
+    "columnId": "c7",
+    "rowOrder": 6,
+    "value": {
+      "kind": "number",
+      "value": 271
+    }
+  },
+  {
+    "_id": "sheetCells:42",
+    "_creationTime": 1785916842000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r6",
+    "columnId": "c8",
+    "rowOrder": 6,
+    "value": {
+      "kind": "number",
+      "value": 3.4
+    }
+  },
+  {
+    "_id": "sheetCells:43",
+    "_creationTime": 1785916843000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r6",
+    "columnId": "c9",
+    "rowOrder": 6,
+    "value": {
+      "kind": "number",
+      "value": 10149
+    },
+    "expression": "=`cell|spreadsheets:1|r6|c5`*`cell|spreadsheets:1|r6|c8`",
+    "anchors": [
+      "",
+      ""
+    ]
+  },
+  {
+    "_id": "sheetCells:44",
+    "_creationTime": 1785916844000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r6",
+    "columnId": "c10",
+    "rowOrder": 6,
+    "value": {
+      "kind": "text",
+      "value": "Tier 1"
+    }
+  },
+  {
+    "_id": "sheetCells:45",
+    "_creationTime": 1785916845000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r6",
+    "columnId": "c11",
+    "rowOrder": 6,
+    "value": {
+      "kind": "text",
+      "value": "Recloser mis-coordination under review"
+    }
+  },
+  {
+    "_id": "sheetCells:46",
+    "_creationTime": 1785916846000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r7",
+    "columnId": "c1",
+    "rowOrder": 7,
+    "value": {
+      "kind": "text",
+      "value": "Deacon Flats"
+    }
+  },
+  {
+    "_id": "sheetCells:47",
+    "_creationTime": 1785916847000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r7",
+    "columnId": "c2",
+    "rowOrder": 7,
+    "value": {
+      "kind": "text",
+      "value": "DF-01"
+    }
+  },
+  {
+    "_id": "sheetCells:48",
+    "_creationTime": 1785916848000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r7",
+    "columnId": "c3",
+    "rowOrder": 7,
+    "value": {
+      "kind": "number",
+      "value": 1840
+    }
+  },
+  {
+    "_id": "sheetCells:49",
+    "_creationTime": 1785916849000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r7",
+    "columnId": "c4",
+    "rowOrder": 7,
+    "value": {
+      "kind": "number",
+      "value": 2
+    }
+  },
+  {
+    "_id": "sheetCells:50",
+    "_creationTime": 1785916850000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r7",
+    "columnId": "c5",
+    "rowOrder": 7,
+    "value": {
+      "kind": "number",
+      "value": 190
+    }
+  },
+  {
+    "_id": "sheetCells:51",
+    "_creationTime": 1785916851000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r7",
+    "columnId": "c6",
+    "rowOrder": 7,
+    "value": {
+      "kind": "number",
+      "value": 6.195652173913044
+    },
+    "expression": "=`cell|spreadsheets:1|r7|c5`*60/`cell|spreadsheets:1|r7|c3`",
+    "anchors": [
+      "",
+      ""
+    ]
+  },
+  {
+    "_id": "sheetCells:52",
+    "_creationTime": 1785916852000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r7",
+    "columnId": "c7",
+    "rowOrder": 7,
+    "value": {
+      "kind": "number",
+      "value": 95
+    }
+  },
+  {
+    "_id": "sheetCells:53",
+    "_creationTime": 1785916853000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r7",
+    "columnId": "c8",
+    "rowOrder": 7,
+    "value": {
+      "kind": "number",
+      "value": 1.2
+    }
+  },
+  {
+    "_id": "sheetCells:54",
+    "_creationTime": 1785916854000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r7",
+    "columnId": "c9",
+    "rowOrder": 7,
+    "value": {
+      "kind": "number",
+      "value": 228
+    },
+    "expression": "=`cell|spreadsheets:1|r7|c5`*`cell|spreadsheets:1|r7|c8`",
+    "anchors": [
+      "",
+      ""
+    ]
+  },
+  {
+    "_id": "sheetCells:55",
+    "_creationTime": 1785916855000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r7",
+    "columnId": "c10",
+    "rowOrder": 7,
+    "value": {
+      "kind": "text",
+      "value": "Deferred"
+    }
+  },
+  {
+    "_id": "sheetCells:56",
+    "_creationTime": 1785916856000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r8",
+    "columnId": "c1",
+    "rowOrder": 8,
+    "value": {
+      "kind": "text",
+      "value": "Ellery"
+    }
+  },
+  {
+    "_id": "sheetCells:57",
+    "_creationTime": 1785916857000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r8",
+    "columnId": "c2",
+    "rowOrder": 8,
+    "value": {
+      "kind": "text",
+      "value": "EL-09"
+    }
+  },
+  {
+    "_id": "sheetCells:58",
+    "_creationTime": 1785916858000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r8",
+    "columnId": "c3",
+    "rowOrder": 8,
+    "value": {
+      "kind": "number",
+      "value": 5330
+    }
+  },
+  {
+    "_id": "sheetCells:59",
+    "_creationTime": 1785916859000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r8",
+    "columnId": "c4",
+    "rowOrder": 8,
+    "value": {
+      "kind": "number",
+      "value": 6
+    }
+  },
+  {
+    "_id": "sheetCells:60",
+    "_creationTime": 1785916860000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r8",
+    "columnId": "c5",
+    "rowOrder": 8,
+    "value": {
+      "kind": "number",
+      "value": 1240
+    }
+  },
+  {
+    "_id": "sheetCells:61",
+    "_creationTime": 1785916861000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r8",
+    "columnId": "c6",
+    "rowOrder": 8,
+    "value": {
+      "kind": "number",
+      "value": 13.958724202626641
+    },
+    "expression": "=`cell|spreadsheets:1|r8|c5`*60/`cell|spreadsheets:1|r8|c3`",
+    "anchors": [
+      "",
+      ""
+    ]
+  },
+  {
+    "_id": "sheetCells:62",
+    "_creationTime": 1785916862000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r8",
+    "columnId": "c7",
+    "rowOrder": 8,
+    "value": {
+      "kind": "number",
+      "value": 207
+    }
+  },
+  {
+    "_id": "sheetCells:63",
+    "_creationTime": 1785916863000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r8",
+    "columnId": "c8",
+    "rowOrder": 8,
+    "value": {
+      "kind": "number",
+      "value": 2.8
+    }
+  },
+  {
+    "_id": "sheetCells:64",
+    "_creationTime": 1785916864000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r8",
+    "columnId": "c9",
+    "rowOrder": 8,
+    "value": {
+      "kind": "number",
+      "value": 3472
+    },
+    "expression": "=`cell|spreadsheets:1|r8|c5`*`cell|spreadsheets:1|r8|c8`",
+    "anchors": [
+      "",
+      ""
+    ]
+  },
+  {
+    "_id": "sheetCells:65",
+    "_creationTime": 1785916865000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r8",
+    "columnId": "c10",
+    "rowOrder": 8,
+    "value": {
+      "kind": "text",
+      "value": "Tier 2"
+    }
+  },
+  {
+    "_id": "sheetCells:66",
+    "_creationTime": 1785916866000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r9",
+    "columnId": "c1",
+    "rowOrder": 9,
+    "value": {
+      "kind": "text",
+      "value": "Fenwick"
+    }
+  },
+  {
+    "_id": "sheetCells:67",
+    "_creationTime": 1785916867000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r9",
+    "columnId": "c2",
+    "rowOrder": 9,
+    "value": {
+      "kind": "text",
+      "value": "FW-04"
+    }
+  },
+  {
+    "_id": "sheetCells:68",
+    "_creationTime": 1785916868000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r9",
+    "columnId": "c3",
+    "rowOrder": 9,
+    "value": {
+      "kind": "number",
+      "value": 3410
+    }
+  },
+  {
+    "_id": "sheetCells:69",
+    "_creationTime": 1785916869000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r9",
+    "columnId": "c4",
+    "rowOrder": 9,
+    "value": {
+      "kind": "number",
+      "value": 9
+    }
+  },
+  {
+    "_id": "sheetCells:70",
+    "_creationTime": 1785916870000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r9",
+    "columnId": "c5",
+    "rowOrder": 9,
+    "value": {
+      "kind": "number",
+      "value": 2210
+    }
+  },
+  {
+    "_id": "sheetCells:71",
+    "_creationTime": 1785916871000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r9",
+    "columnId": "c6",
+    "rowOrder": 9,
+    "value": {
+      "kind": "number",
+      "value": 38.88563049853372
+    },
+    "expression": "=`cell|spreadsheets:1|r9|c5`*60/`cell|spreadsheets:1|r9|c3`",
+    "anchors": [
+      "",
+      ""
+    ]
+  },
+  {
+    "_id": "sheetCells:72",
+    "_creationTime": 1785916872000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r9",
+    "columnId": "c7",
+    "rowOrder": 9,
+    "value": {
+      "kind": "number",
+      "value": 246
+    }
+  },
+  {
+    "_id": "sheetCells:73",
+    "_creationTime": 1785916873000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r9",
+    "columnId": "c8",
+    "rowOrder": 9,
+    "value": {
+      "kind": "number",
+      "value": 3.9
+    }
+  },
+  {
+    "_id": "sheetCells:74",
+    "_creationTime": 1785916874000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r9",
+    "columnId": "c9",
+    "rowOrder": 9,
+    "value": {
+      "kind": "number",
+      "value": 8619
+    },
+    "expression": "=`cell|spreadsheets:1|r9|c5`*`cell|spreadsheets:1|r9|c8`",
+    "anchors": [
+      "",
+      ""
+    ]
+  },
+  {
+    "_id": "sheetCells:75",
+    "_creationTime": 1785916875000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r9",
+    "columnId": "c10",
+    "rowOrder": 9,
+    "value": {
+      "kind": "text",
+      "value": "Tier 1"
+    }
+  },
+  {
+    "_id": "sheetCells:76",
+    "_creationTime": 1785916876000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r9",
+    "columnId": "c11",
+    "rowOrder": 9,
+    "value": {
+      "kind": "text",
+      "value": "Two storm events, 14 and 22 July"
+    }
+  },
+  {
+    "_id": "sheetCells:77",
+    "_creationTime": 1785916877000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r10",
+    "columnId": "c1",
+    "rowOrder": 10,
+    "value": {
+      "kind": "text",
+      "value": "Gorse Lane"
+    }
+  },
+  {
+    "_id": "sheetCells:78",
+    "_creationTime": 1785916878000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r10",
+    "columnId": "c2",
+    "rowOrder": 10,
+    "value": {
+      "kind": "text",
+      "value": "GL-02"
+    }
+  },
+  {
+    "_id": "sheetCells:79",
+    "_creationTime": 1785916879000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r10",
+    "columnId": "c3",
+    "rowOrder": 10,
+    "value": {
+      "kind": "number",
+      "value": 2270
+    }
+  },
+  {
+    "_id": "sheetCells:80",
+    "_creationTime": 1785916880000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r10",
+    "columnId": "c4",
+    "rowOrder": 10,
+    "value": {
+      "kind": "number",
+      "value": 4
+    }
+  },
+  {
+    "_id": "sheetCells:81",
+    "_creationTime": 1785916881000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r10",
+    "columnId": "c5",
+    "rowOrder": 10,
+    "value": {
+      "kind": "number",
+      "value": 530
+    }
+  },
+  {
+    "_id": "sheetCells:82",
+    "_creationTime": 1785916882000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r10",
+    "columnId": "c6",
+    "rowOrder": 10,
+    "value": {
+      "kind": "number",
+      "value": 14.008810572687224
+    },
+    "expression": "=`cell|spreadsheets:1|r10|c5`*60/`cell|spreadsheets:1|r10|c3`",
+    "anchors": [
+      "",
+      ""
+    ]
+  },
+  {
+    "_id": "sheetCells:83",
+    "_creationTime": 1785916883000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r10",
+    "columnId": "c7",
+    "rowOrder": 10,
+    "value": {
+      "kind": "number",
+      "value": 133
+    }
+  },
+  {
+    "_id": "sheetCells:84",
+    "_creationTime": 1785916884000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r10",
+    "columnId": "c8",
+    "rowOrder": 10,
+    "value": {
+      "kind": "number",
+      "value": 2.3
+    }
+  },
+  {
+    "_id": "sheetCells:85",
+    "_creationTime": 1785916885000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r10",
+    "columnId": "c9",
+    "rowOrder": 10,
+    "value": {
+      "kind": "number",
+      "value": 1219
+    },
+    "expression": "=`cell|spreadsheets:1|r10|c5`*`cell|spreadsheets:1|r10|c8`",
+    "anchors": [
+      "",
+      ""
+    ]
+  },
+  {
+    "_id": "sheetCells:86",
+    "_creationTime": 1785916886000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r10",
+    "columnId": "c10",
+    "rowOrder": 10,
+    "value": {
+      "kind": "text",
+      "value": "Tier 2"
+    }
+  },
+  {
+    "_id": "sheetCells:87",
+    "_creationTime": 1785916887000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r11",
+    "columnId": "c1",
+    "rowOrder": 11,
+    "value": {
+      "kind": "text",
+      "value": "Halton Ridge"
+    }
+  },
+  {
+    "_id": "sheetCells:88",
+    "_creationTime": 1785916888000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r11",
+    "columnId": "c2",
+    "rowOrder": 11,
+    "value": {
+      "kind": "text",
+      "value": "HR-11"
+    }
+  },
+  {
+    "_id": "sheetCells:89",
+    "_creationTime": 1785916889000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r11",
+    "columnId": "c3",
+    "rowOrder": 11,
+    "value": {
+      "kind": "number",
+      "value": 7890
+    }
+  },
+  {
+    "_id": "sheetCells:90",
+    "_creationTime": 1785916890000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r11",
+    "columnId": "c4",
+    "rowOrder": 11,
+    "value": {
+      "kind": "number",
+      "value": 5
+    }
+  },
+  {
+    "_id": "sheetCells:91",
+    "_creationTime": 1785916891000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r11",
+    "columnId": "c5",
+    "rowOrder": 11,
+    "value": {
+      "kind": "number",
+      "value": 905
+    }
+  },
+  {
+    "_id": "sheetCells:92",
+    "_creationTime": 1785916892000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r11",
+    "columnId": "c6",
+    "rowOrder": 11,
+    "value": {
+      "kind": "number",
+      "value": 6.88212927756654
+    },
+    "expression": "=`cell|spreadsheets:1|r11|c5`*60/`cell|spreadsheets:1|r11|c3`",
+    "anchors": [
+      "",
+      ""
+    ]
+  },
+  {
+    "_id": "sheetCells:93",
+    "_creationTime": 1785916893000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r11",
+    "columnId": "c7",
+    "rowOrder": 11,
+    "value": {
+      "kind": "number",
+      "value": 181
+    }
+  },
+  {
+    "_id": "sheetCells:94",
+    "_creationTime": 1785916894000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r11",
+    "columnId": "c8",
+    "rowOrder": 11,
+    "value": {
+      "kind": "number",
+      "value": 2.6
+    }
+  },
+  {
+    "_id": "sheetCells:95",
+    "_creationTime": 1785916895000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r11",
+    "columnId": "c9",
+    "rowOrder": 11,
+    "value": {
+      "kind": "number",
+      "value": 2353
+    },
+    "expression": "=`cell|spreadsheets:1|r11|c5`*`cell|spreadsheets:1|r11|c8`",
+    "anchors": [
+      "",
+      ""
+    ]
+  },
+  {
+    "_id": "sheetCells:96",
+    "_creationTime": 1785916896000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r11",
+    "columnId": "c10",
+    "rowOrder": 11,
+    "value": {
+      "kind": "text",
+      "value": "Tier 3"
+    }
+  },
+  {
+    "_id": "sheetCells:97",
+    "_creationTime": 1785916897000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r12",
+    "columnId": "c1",
+    "rowOrder": 12,
+    "value": {
+      "kind": "text",
+      "value": "Ironbridge"
+    }
+  },
+  {
+    "_id": "sheetCells:98",
+    "_creationTime": 1785916898000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r12",
+    "columnId": "c2",
+    "rowOrder": 12,
+    "value": {
+      "kind": "text",
+      "value": "IB-06"
+    }
+  },
+  {
+    "_id": "sheetCells:99",
+    "_creationTime": 1785916899000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r12",
+    "columnId": "c3",
+    "rowOrder": 12,
+    "value": {
+      "kind": "number",
+      "value": 4520
+    }
+  },
+  {
+    "_id": "sheetCells:100",
+    "_creationTime": 1785916900000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r12",
+    "columnId": "c4",
+    "rowOrder": 12,
+    "value": {
+      "kind": "number",
+      "value": 8
+    }
+  },
+  {
+    "_id": "sheetCells:101",
+    "_creationTime": 1785916901000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r12",
+    "columnId": "c5",
+    "rowOrder": 12,
+    "value": {
+      "kind": "number",
+      "value": 1720
+    }
+  },
+  {
+    "_id": "sheetCells:102",
+    "_creationTime": 1785916902000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r12",
+    "columnId": "c6",
+    "rowOrder": 12,
+    "value": {
+      "kind": "number",
+      "value": 22.831858407079647
+    },
+    "expression": "=`cell|spreadsheets:1|r12|c5`*60/`cell|spreadsheets:1|r12|c3`",
+    "anchors": [
+      "",
+      ""
+    ]
+  },
+  {
+    "_id": "sheetCells:103",
+    "_creationTime": 1785916903000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r12",
+    "columnId": "c7",
+    "rowOrder": 12,
+    "value": {
+      "kind": "number",
+      "value": 215
+    }
+  },
+  {
+    "_id": "sheetCells:104",
+    "_creationTime": 1785916904000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r12",
+    "columnId": "c8",
+    "rowOrder": 12,
+    "value": {
+      "kind": "empty"
+    },
+    "expression": "=`cell|spreadsheets:1|?|?`",
+    "anchors": [
+      ""
+    ],
+    "failure": {
+      "token": "#REF!"
+    }
+  },
+  {
+    "_id": "sheetCells:105",
+    "_creationTime": 1785916905000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r12",
+    "columnId": "c9",
+    "rowOrder": 12,
+    "value": {
+      "kind": "number",
+      "value": 5160
+    }
+  },
+  {
+    "_id": "sheetCells:106",
+    "_creationTime": 1785916906000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r12",
+    "columnId": "c10",
+    "rowOrder": 12,
+    "value": {
+      "kind": "text",
+      "value": "Tier 2"
+    }
+  },
+  {
+    "_id": "sheetCells:107",
+    "_creationTime": 1785916907000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r12",
+    "columnId": "c11",
+    "rowOrder": 12,
+    "value": {
+      "kind": "text",
+      "value": "Underground section flooded"
+    }
+  },
+  {
+    "_id": "sheetCells:108",
+    "_creationTime": 1785916908000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r13",
+    "columnId": "c1",
+    "rowOrder": 13,
+    "value": {
+      "kind": "text",
+      "value": "Jessup"
+    }
+  },
+  {
+    "_id": "sheetCells:109",
+    "_creationTime": 1785916909000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r13",
+    "columnId": "c2",
+    "rowOrder": 13,
+    "value": {
+      "kind": "text",
+      "value": "JS-05"
+    }
+  },
+  {
+    "_id": "sheetCells:110",
+    "_creationTime": 1785916910000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r13",
+    "columnId": "c3",
+    "rowOrder": 13,
+    "value": {
+      "kind": "number",
+      "value": 1290
+    }
+  },
+  {
+    "_id": "sheetCells:111",
+    "_creationTime": 1785916911000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r13",
+    "columnId": "c4",
+    "rowOrder": 13,
+    "value": {
+      "kind": "number",
+      "value": 1
+    }
+  },
+  {
+    "_id": "sheetCells:112",
+    "_creationTime": 1785916912000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r13",
+    "columnId": "c5",
+    "rowOrder": 13,
+    "value": {
+      "kind": "number",
+      "value": 45
+    }
+  },
+  {
+    "_id": "sheetCells:113",
+    "_creationTime": 1785916913000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r13",
+    "columnId": "c6",
+    "rowOrder": 13,
+    "value": {
+      "kind": "number",
+      "value": 2.0930232558139537
+    },
+    "expression": "=`cell|spreadsheets:1|r13|c5`*60/`cell|spreadsheets:1|r13|c3`",
+    "anchors": [
+      "",
+      ""
+    ]
+  },
+  {
+    "_id": "sheetCells:114",
+    "_creationTime": 1785916914000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r13",
+    "columnId": "c7",
+    "rowOrder": 13,
+    "value": {
+      "kind": "number",
+      "value": 45
+    }
+  },
+  {
+    "_id": "sheetCells:115",
+    "_creationTime": 1785916915000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r13",
+    "columnId": "c8",
+    "rowOrder": 13,
+    "value": {
+      "kind": "number",
+      "value": 0.9
+    }
+  },
+  {
+    "_id": "sheetCells:116",
+    "_creationTime": 1785916916000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r13",
+    "columnId": "c9",
+    "rowOrder": 13,
+    "value": {
+      "kind": "number",
+      "value": 40.5
+    },
+    "expression": "=`cell|spreadsheets:1|r13|c5`*`cell|spreadsheets:1|r13|c8`",
+    "anchors": [
+      "",
+      ""
+    ]
+  },
+  {
+    "_id": "sheetCells:117",
+    "_creationTime": 1785916917000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r13",
+    "columnId": "c10",
+    "rowOrder": 13,
+    "value": {
+      "kind": "text",
+      "value": "Deferred"
+    }
+  },
+  {
+    "_id": "sheetCells:118",
+    "_creationTime": 1785916918000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r14",
+    "columnId": "c1",
+    "rowOrder": 14,
+    "value": {
+      "kind": "text",
+      "value": "Kettle Creek"
+    }
+  },
+  {
+    "_id": "sheetCells:119",
+    "_creationTime": 1785916919000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r14",
+    "columnId": "c2",
+    "rowOrder": 14,
+    "value": {
+      "kind": "text",
+      "value": "KC-08"
+    }
+  },
+  {
+    "_id": "sheetCells:120",
+    "_creationTime": 1785916920000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r14",
+    "columnId": "c3",
+    "rowOrder": 14,
+    "value": {
+      "kind": "number",
+      "value": 3980
+    }
+  },
+  {
+    "_id": "sheetCells:121",
+    "_creationTime": 1785916921000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r14",
+    "columnId": "c4",
+    "rowOrder": 14,
+    "value": {
+      "kind": "number",
+      "value": 6
+    }
+  },
+  {
+    "_id": "sheetCells:122",
+    "_creationTime": 1785916922000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r14",
+    "columnId": "c5",
+    "rowOrder": 14,
+    "value": {
+      "kind": "number",
+      "value": 1385
+    }
+  },
+  {
+    "_id": "sheetCells:123",
+    "_creationTime": 1785916923000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r14",
+    "columnId": "c6",
+    "rowOrder": 14,
+    "value": {
+      "kind": "number",
+      "value": 20.87939698492462
+    },
+    "expression": "=`cell|spreadsheets:1|r14|c5`*60/`cell|spreadsheets:1|r14|c3`",
+    "anchors": [
+      "",
+      ""
+    ]
+  },
+  {
+    "_id": "sheetCells:124",
+    "_creationTime": 1785916924000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r14",
+    "columnId": "c7",
+    "rowOrder": 14,
+    "value": {
+      "kind": "number",
+      "value": 231
+    }
+  },
+  {
+    "_id": "sheetCells:125",
+    "_creationTime": 1785916925000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r14",
+    "columnId": "c8",
+    "rowOrder": 14,
+    "value": {
+      "kind": "number",
+      "value": 2.7
+    }
+  },
+  {
+    "_id": "sheetCells:126",
+    "_creationTime": 1785916926000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r14",
+    "columnId": "c9",
+    "rowOrder": 14,
+    "value": {
+      "kind": "number",
+      "value": 3739.5
+    },
+    "expression": "=`cell|spreadsheets:1|r14|c5`*`cell|spreadsheets:1|r14|c8`",
+    "anchors": [
+      "",
+      ""
+    ]
+  },
+  {
+    "_id": "sheetCells:127",
+    "_creationTime": 1785916927000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r14",
+    "columnId": "c10",
+    "rowOrder": 14,
+    "value": {
+      "kind": "text",
+      "value": "Tier 2"
+    }
+  },
+  {
+    "_id": "sheetCells:128",
+    "_creationTime": 1785916928000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r15",
+    "columnId": "c1",
+    "rowOrder": 15,
+    "value": {
+      "kind": "text",
+      "value": "Lindow"
+    }
+  },
+  {
+    "_id": "sheetCells:129",
+    "_creationTime": 1785916929000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r15",
+    "columnId": "c2",
+    "rowOrder": 15,
+    "value": {
+      "kind": "text",
+      "value": "LD-10"
+    }
+  },
+  {
+    "_id": "sheetCells:130",
+    "_creationTime": 1785916930000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r15",
+    "columnId": "c3",
+    "rowOrder": 15,
+    "value": {
+      "kind": "number",
+      "value": 5610
+    }
+  },
+  {
+    "_id": "sheetCells:131",
+    "_creationTime": 1785916931000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r15",
+    "columnId": "c4",
+    "rowOrder": 15,
+    "value": {
+      "kind": "number",
+      "value": 12
+    }
+  },
+  {
+    "_id": "sheetCells:132",
+    "_creationTime": 1785916932000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r15",
+    "columnId": "c5",
+    "rowOrder": 15,
+    "value": {
+      "kind": "number",
+      "value": 3480
+    }
+  },
+  {
+    "_id": "sheetCells:133",
+    "_creationTime": 1785916933000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r15",
+    "columnId": "c6",
+    "rowOrder": 15,
+    "value": {
+      "kind": "number",
+      "value": 37.219251336898395
+    },
+    "expression": "=`cell|spreadsheets:1|r15|c5`*60/`cell|spreadsheets:1|r15|c3`",
+    "anchors": [
+      "",
+      ""
+    ]
+  },
+  {
+    "_id": "sheetCells:134",
+    "_creationTime": 1785916934000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r15",
+    "columnId": "c7",
+    "rowOrder": 15,
+    "value": {
+      "kind": "number",
+      "value": 290
+    }
+  },
+  {
+    "_id": "sheetCells:135",
+    "_creationTime": 1785916935000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r15",
+    "columnId": "c8",
+    "rowOrder": 15,
+    "value": {
+      "kind": "number",
+      "value": 4.4
+    }
+  },
+  {
+    "_id": "sheetCells:136",
+    "_creationTime": 1785916936000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r15",
+    "columnId": "c9",
+    "rowOrder": 15,
+    "value": {
+      "kind": "number",
+      "value": 15312
+    },
+    "expression": "=`cell|spreadsheets:1|r15|c5`*`cell|spreadsheets:1|r15|c8`",
+    "anchors": [
+      "",
+      ""
+    ]
+  },
+  {
+    "_id": "sheetCells:137",
+    "_creationTime": 1785916937000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r15",
+    "columnId": "c10",
+    "rowOrder": 15,
+    "value": {
+      "kind": "text",
+      "value": "Tier 1"
+    }
+  },
+  {
+    "_id": "sheetCells:138",
+    "_creationTime": 1785916938000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r15",
+    "columnId": "c11",
+    "rowOrder": 15,
+    "value": {
+      "kind": "text",
+      "value": "Longest single restoration, 6h 10m"
+    }
+  },
+  {
+    "_id": "sheetCells:139",
+    "_creationTime": 1785916939000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r16",
+    "columnId": "c1",
+    "rowOrder": 16,
+    "value": {
+      "kind": "text",
+      "value": "Marlow"
+    }
+  },
+  {
+    "_id": "sheetCells:140",
+    "_creationTime": 1785916940000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r16",
+    "columnId": "c2",
+    "rowOrder": 16,
+    "value": {
+      "kind": "text",
+      "value": "MW-13"
+    }
+  },
+  {
+    "_id": "sheetCells:141",
+    "_creationTime": 1785916941000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r16",
+    "columnId": "c3",
+    "rowOrder": 16,
+    "value": {
+      "kind": "number",
+      "value": 2740
+    }
+  },
+  {
+    "_id": "sheetCells:142",
+    "_creationTime": 1785916942000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r16",
+    "columnId": "c4",
+    "rowOrder": 16,
+    "value": {
+      "kind": "number",
+      "value": 3
+    }
+  },
+  {
+    "_id": "sheetCells:143",
+    "_creationTime": 1785916943000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r16",
+    "columnId": "c5",
+    "rowOrder": 16,
+    "value": {
+      "kind": "number",
+      "value": 366
+    }
+  },
+  {
+    "_id": "sheetCells:144",
+    "_creationTime": 1785916944000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r16",
+    "columnId": "c6",
+    "rowOrder": 16,
+    "value": {
+      "kind": "number",
+      "value": 8.014598540145986
+    },
+    "expression": "=`cell|spreadsheets:1|r16|c5`*60/`cell|spreadsheets:1|r16|c3`",
+    "anchors": [
+      "",
+      ""
+    ]
+  },
+  {
+    "_id": "sheetCells:145",
+    "_creationTime": 1785916945000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r16",
+    "columnId": "c7",
+    "rowOrder": 16,
+    "value": {
+      "kind": "number",
+      "value": 122
+    }
+  },
+  {
+    "_id": "sheetCells:146",
+    "_creationTime": 1785916946000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r16",
+    "columnId": "c8",
+    "rowOrder": 16,
+    "value": {
+      "kind": "number",
+      "value": 1.8
+    }
+  },
+  {
+    "_id": "sheetCells:147",
+    "_creationTime": 1785916947000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r16",
+    "columnId": "c9",
+    "rowOrder": 16,
+    "value": {
+      "kind": "number",
+      "value": 658.8
+    },
+    "expression": "=`cell|spreadsheets:1|r16|c5`*`cell|spreadsheets:1|r16|c8`",
+    "anchors": [
+      "",
+      ""
+    ]
+  },
+  {
+    "_id": "sheetCells:148",
+    "_creationTime": 1785916948000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r16",
+    "columnId": "c10",
+    "rowOrder": 16,
+    "value": {
+      "kind": "text",
+      "value": "Tier 3"
+    }
+  },
+  {
+    "_id": "sheetCells:149",
+    "_creationTime": 1785916949000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r17",
+    "columnId": "c1",
+    "rowOrder": 17,
+    "value": {
+      "kind": "text",
+      "value": "Norbury"
+    }
+  },
+  {
+    "_id": "sheetCells:150",
+    "_creationTime": 1785916950000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r17",
+    "columnId": "c2",
+    "rowOrder": 17,
+    "value": {
+      "kind": "text",
+      "value": "NB-14"
+    }
+  },
+  {
+    "_id": "sheetCells:151",
+    "_creationTime": 1785916951000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r17",
+    "columnId": "c3",
+    "rowOrder": 17,
+    "value": {
+      "kind": "number",
+      "value": 3150
+    }
+  },
+  {
+    "_id": "sheetCells:152",
+    "_creationTime": 1785916952000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r17",
+    "columnId": "c4",
+    "rowOrder": 17,
+    "value": {
+      "kind": "number",
+      "value": 5
+    }
+  },
+  {
+    "_id": "sheetCells:153",
+    "_creationTime": 1785916953000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r17",
+    "columnId": "c5",
+    "rowOrder": 17,
+    "value": {
+      "kind": "number",
+      "value": 1010
+    }
+  },
+  {
+    "_id": "sheetCells:154",
+    "_creationTime": 1785916954000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r17",
+    "columnId": "c6",
+    "rowOrder": 17,
+    "value": {
+      "kind": "number",
+      "value": 19.238095238095237
+    },
+    "expression": "=`cell|spreadsheets:1|r17|c5`*60/`cell|spreadsheets:1|r17|c3`",
+    "anchors": [
+      "",
+      ""
+    ]
+  },
+  {
+    "_id": "sheetCells:155",
+    "_creationTime": 1785916955000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r17",
+    "columnId": "c7",
+    "rowOrder": 17,
+    "value": {
+      "kind": "number",
+      "value": 202
+    }
+  },
+  {
+    "_id": "sheetCells:156",
+    "_creationTime": 1785916956000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r17",
+    "columnId": "c8",
+    "rowOrder": 17,
+    "value": {
+      "kind": "number",
+      "value": 2.5
+    }
+  },
+  {
+    "_id": "sheetCells:157",
+    "_creationTime": 1785916957000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r17",
+    "columnId": "c9",
+    "rowOrder": 17,
+    "value": {
+      "kind": "number",
+      "value": 2525
+    },
+    "expression": "=`cell|spreadsheets:1|r17|c5`*`cell|spreadsheets:1|r17|c8`",
+    "anchors": [
+      "",
+      ""
+    ]
+  },
+  {
+    "_id": "sheetCells:158",
+    "_creationTime": 1785916958000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r17",
+    "columnId": "c10",
+    "rowOrder": 17,
+    "value": {
+      "kind": "text",
+      "value": "Tier 2"
+    }
+  },
+  {
+    "_id": "sheetCells:159",
+    "_creationTime": 1785916959000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r18",
+    "columnId": "c1",
+    "rowOrder": 18,
+    "value": {
+      "kind": "text",
+      "value": "All substations"
+    }
+  },
+  {
+    "_id": "sheetCells:160",
+    "_creationTime": 1785916960000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r18",
+    "columnId": "c3",
+    "rowOrder": 18,
+    "value": {
+      "kind": "number",
+      "value": 55290
+    },
+    "expression": "=SUM(`range|spreadsheets:1|r4|c3|r17|c3`)",
+    "anchors": [
+      ":"
+    ]
+  },
+  {
+    "_id": "sheetCells:161",
+    "_creationTime": 1785916961000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r18",
+    "columnId": "c4",
+    "rowOrder": 18,
+    "value": {
+      "kind": "empty"
+    },
+    "expression": "=SUMM(`range|spreadsheets:1|r4|c4|r17|c4`)",
+    "anchors": [
+      ":"
+    ],
+    "failure": {
+      "token": "#NAME?",
+      "word": "SUMM"
+    }
+  },
+  {
+    "_id": "sheetCells:162",
+    "_creationTime": 1785916962000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r18",
+    "columnId": "c5",
+    "rowOrder": 18,
+    "value": {
+      "kind": "number",
+      "value": 18088
+    },
+    "expression": "=SUM(`range|spreadsheets:1|r4|c5|r17|c5`)",
+    "anchors": [
+      ":"
+    ]
+  },
+  {
+    "_id": "sheetCells:163",
+    "_creationTime": 1785916963000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r18",
+    "columnId": "c6",
+    "rowOrder": 18,
+    "value": {
+      "kind": "number",
+      "value": 19.628865979381445
+    },
+    "expression": "=`cell|spreadsheets:1|r18|c5`*60/`cell|spreadsheets:1|r18|c3`",
+    "anchors": [
+      "",
+      ""
+    ]
+  },
+  {
+    "_id": "sheetCells:164",
+    "_creationTime": 1785916964000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r18",
+    "columnId": "c9",
+    "rowOrder": 18,
+    "value": {
+      "kind": "number",
+      "value": 60859.6
+    },
+    "expression": "=SUM(`range|spreadsheets:1|r4|c9|r17|c9`)",
+    "anchors": [
+      ":"
+    ]
+  },
+  {
+    "_id": "sheetCells:165",
+    "_creationTime": 1785916965000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r21",
+    "columnId": "c1",
+    "rowOrder": 21,
+    "value": {
+      "kind": "text",
+      "value": "Tier"
+    }
+  },
+  {
+    "_id": "sheetCells:166",
+    "_creationTime": 1785916966000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r21",
+    "columnId": "c2",
+    "rowOrder": 21,
+    "value": {
+      "kind": "text",
+      "value": "Feeders"
+    }
+  },
+  {
+    "_id": "sheetCells:167",
+    "_creationTime": 1785916967000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r22",
+    "columnId": "c1",
+    "rowOrder": 22,
+    "value": {
+      "kind": "text",
+      "value": "Tier 1"
+    },
+    "expression": "=UNIQUE(`range|spreadsheets:1|r4|c10|r17|c10`)[0]",
+    "anchors": [
+      ":"
+    ]
+  },
+  {
+    "_id": "sheetCells:168",
+    "_creationTime": 1785916968000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r23",
+    "columnId": "c1",
+    "rowOrder": 23,
+    "value": {
+      "kind": "text",
+      "value": "Tier 2"
+    }
+  },
+  {
+    "_id": "sheetCells:169",
+    "_creationTime": 1785916969000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r24",
+    "columnId": "c1",
+    "rowOrder": 24,
+    "value": {
+      "kind": "text",
+      "value": "Tier 3"
+    }
+  },
+  {
+    "_id": "sheetCells:170",
+    "_creationTime": 1785916970000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r25",
+    "columnId": "c1",
+    "rowOrder": 25,
+    "value": {
+      "kind": "text",
+      "value": "Deferred"
+    }
+  },
+  {
+    "_id": "sheetCells:171",
+    "_creationTime": 1785916971000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r22",
+    "columnId": "c2",
+    "rowOrder": 22,
+    "value": {
+      "kind": "number",
+      "value": 4
+    },
+    "expression": "=COUNTIF(`range|spreadsheets:1|r4|c10|r17|c10`,`cell|spreadsheets:1|r22|c1`)",
+    "anchors": [
+      "r:r",
+      ""
+    ]
+  },
+  {
+    "_id": "sheetCells:172",
+    "_creationTime": 1785916972000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r23",
+    "columnId": "c2",
+    "rowOrder": 23,
+    "value": {
+      "kind": "number",
+      "value": 5
+    },
+    "expression": "=COUNTIF(`range|spreadsheets:1|r4|c10|r17|c10`,`cell|spreadsheets:1|r23|c1`)",
+    "anchors": [
+      "r:r",
+      ""
+    ]
+  },
+  {
+    "_id": "sheetCells:173",
+    "_creationTime": 1785916973000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r24",
+    "columnId": "c2",
+    "rowOrder": 24,
+    "value": {
+      "kind": "number",
+      "value": 3
+    },
+    "expression": "=COUNTIF(`range|spreadsheets:1|r4|c10|r17|c10`,`cell|spreadsheets:1|r24|c1`)",
+    "anchors": [
+      "r:r",
+      ""
+    ]
+  },
+  {
+    "_id": "sheetCells:174",
+    "_creationTime": 1785916974000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r25",
+    "columnId": "c2",
+    "rowOrder": 25,
+    "value": {
+      "kind": "number",
+      "value": 2
+    },
+    "expression": "=COUNTIF(`range|spreadsheets:1|r4|c10|r17|c10`,`cell|spreadsheets:1|r25|c1`)",
+    "anchors": [
+      "r:r",
+      ""
+    ]
+  },
+  {
+    "_id": "sheetCells:175",
+    "_creationTime": 1785916975000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r27",
+    "columnId": "c1",
+    "rowOrder": 27,
+    "value": {
+      "kind": "text",
+      "value": "Cost per minute comes from the hardening cost model; Ironbridge still points at the retired Rates sheet."
+    },
+    "marks": [
+      {
+        "id": "m1",
+        "from": {
+          "atom": "text",
+          "offset": 0
+        },
+        "to": {
+          "atom": "text",
+          "offset": 15
+        },
+        "style": [
+          "bold"
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "sheetCells:176",
+    "_creationTime": 1785916976000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r19",
+    "columnId": "c8",
+    "rowOrder": 19,
+    "value": {
+      "kind": "text",
+      "value": "Programme cost"
+    }
+  },
+  {
+    "_id": "sheetCells:177",
+    "_creationTime": 1785916977000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:1",
+    "rowId": "r19",
+    "columnId": "c9",
+    "rowOrder": 19,
+    "value": {
+      "kind": "number",
+      "value": 6941600
+    },
+    "expression": "=`cell|spreadsheets:2|r10|c5`",
+    "format": {
+      "valueFormat": "$#,##0"
+    },
+    "anchors": [
+      ""
+    ]
+  },
+  {
+    "_id": "sheetCells:178",
+    "_creationTime": 1785916978000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:2",
+    "rowId": "r1",
+    "columnId": "c1",
+    "rowOrder": 1,
+    "value": {
+      "kind": "text",
+      "value": "Hardening cost model"
+    },
+    "mergedTo": {
+      "rowId": "r1",
+      "columnId": "c4"
+    }
+  },
+  {
+    "_id": "sheetCells:179",
+    "_creationTime": 1785916979000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:2",
+    "rowId": "r3",
+    "columnId": "c1",
+    "rowOrder": 3,
+    "value": {
+      "kind": "text",
+      "value": "Measure"
+    }
+  },
+  {
+    "_id": "sheetCells:180",
+    "_creationTime": 1785916980000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:2",
+    "rowId": "r3",
+    "columnId": "c2",
+    "rowOrder": 3,
+    "value": {
+      "kind": "text",
+      "value": "Unit"
+    }
+  },
+  {
+    "_id": "sheetCells:181",
+    "_creationTime": 1785916981000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:2",
+    "rowId": "r3",
+    "columnId": "c3",
+    "rowOrder": 3,
+    "value": {
+      "kind": "text",
+      "value": "Unit cost"
+    }
+  },
+  {
+    "_id": "sheetCells:182",
+    "_creationTime": 1785916982000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:2",
+    "rowId": "r3",
+    "columnId": "c4",
+    "rowOrder": 3,
+    "value": {
+      "kind": "text",
+      "value": "Units"
+    }
+  },
+  {
+    "_id": "sheetCells:183",
+    "_creationTime": 1785916983000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:2",
+    "rowId": "r3",
+    "columnId": "c5",
+    "rowOrder": 3,
+    "value": {
+      "kind": "text",
+      "value": "Total"
+    }
+  },
+  {
+    "_id": "sheetCells:184",
+    "_creationTime": 1785916984000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:2",
+    "rowId": "r3",
+    "columnId": "c6",
+    "rowOrder": 3,
+    "value": {
+      "kind": "text",
+      "value": "Avoided min / yr"
+    }
+  },
+  {
+    "_id": "sheetCells:185",
+    "_creationTime": 1785916985000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:2",
+    "rowId": "r3",
+    "columnId": "c7",
+    "rowOrder": 3,
+    "value": {
+      "kind": "text",
+      "value": "Value / yr"
+    }
+  },
+  {
+    "_id": "sheetCells:186",
+    "_creationTime": 1785916986000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:2",
+    "rowId": "r3",
+    "columnId": "c8",
+    "rowOrder": 3,
+    "value": {
+      "kind": "text",
+      "value": "Payback (yr)"
+    }
+  },
+  {
+    "_id": "sheetCells:187",
+    "_creationTime": 1785916987000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:2",
+    "rowId": "r4",
+    "columnId": "c1",
+    "rowOrder": 4,
+    "value": {
+      "kind": "text",
+      "value": "Covered conductor, Tier 1 laterals"
+    }
+  },
+  {
+    "_id": "sheetCells:188",
+    "_creationTime": 1785916988000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:2",
+    "rowId": "r4",
+    "columnId": "c2",
+    "rowOrder": 4,
+    "value": {
+      "kind": "text",
+      "value": "km"
+    }
+  },
+  {
+    "_id": "sheetCells:189",
+    "_creationTime": 1785916989000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:2",
+    "rowId": "r4",
+    "columnId": "c3",
+    "rowOrder": 4,
+    "value": {
+      "kind": "number",
+      "value": 68000
+    }
+  },
+  {
+    "_id": "sheetCells:190",
+    "_creationTime": 1785916990000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:2",
+    "rowId": "r4",
+    "columnId": "c4",
+    "rowOrder": 4,
+    "value": {
+      "kind": "number",
+      "value": 42
+    }
+  },
+  {
+    "_id": "sheetCells:191",
+    "_creationTime": 1785916991000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:2",
+    "rowId": "r4",
+    "columnId": "c5",
+    "rowOrder": 4,
+    "value": {
+      "kind": "number",
+      "value": 2856000
+    },
+    "expression": "=`cell|spreadsheets:2|r4|c3`*`cell|spreadsheets:2|r4|c4`",
+    "anchors": [
+      "",
+      ""
+    ]
+  },
+  {
+    "_id": "sheetCells:192",
+    "_creationTime": 1785916992000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:2",
+    "rowId": "r4",
+    "columnId": "c6",
+    "rowOrder": 4,
+    "value": {
+      "kind": "number",
+      "value": 1180000
+    }
+  },
+  {
+    "_id": "sheetCells:193",
+    "_creationTime": 1785916993000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:2",
+    "rowId": "r4",
+    "columnId": "c7",
+    "rowOrder": 4,
+    "value": {
+      "kind": "number",
+      "value": 3776000
+    },
+    "expression": "=`cell|spreadsheets:2|r4|c6`*perMinuteRate",
+    "anchors": [
+      ""
+    ]
+  },
+  {
+    "_id": "sheetCells:194",
+    "_creationTime": 1785916994000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:2",
+    "rowId": "r4",
+    "columnId": "c8",
+    "rowOrder": 4,
+    "value": {
+      "kind": "number",
+      "value": 0.8
+    },
+    "expression": "=`cell|spreadsheets:2|r4|c5`/`cell|spreadsheets:2|r4|c7`",
+    "anchors": [
+      "",
+      ""
+    ]
+  },
+  {
+    "_id": "sheetCells:195",
+    "_creationTime": 1785916995000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:2",
+    "rowId": "r5",
+    "columnId": "c1",
+    "rowOrder": 5,
+    "value": {
+      "kind": "text",
+      "value": "Sectionalising reclosers"
+    }
+  },
+  {
+    "_id": "sheetCells:196",
+    "_creationTime": 1785916996000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:2",
+    "rowId": "r5",
+    "columnId": "c2",
+    "rowOrder": 5,
+    "value": {
+      "kind": "text",
+      "value": "each"
+    }
+  },
+  {
+    "_id": "sheetCells:197",
+    "_creationTime": 1785916997000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:2",
+    "rowId": "r5",
+    "columnId": "c3",
+    "rowOrder": 5,
+    "value": {
+      "kind": "number",
+      "value": 41000
+    }
+  },
+  {
+    "_id": "sheetCells:198",
+    "_creationTime": 1785916998000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:2",
+    "rowId": "r5",
+    "columnId": "c4",
+    "rowOrder": 5,
+    "value": {
+      "kind": "number",
+      "value": 18
+    }
+  },
+  {
+    "_id": "sheetCells:199",
+    "_creationTime": 1785916999000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:2",
+    "rowId": "r5",
+    "columnId": "c5",
+    "rowOrder": 5,
+    "value": {
+      "kind": "number",
+      "value": 738000
+    },
+    "expression": "=`cell|spreadsheets:2|r5|c3`*`cell|spreadsheets:2|r5|c4`",
+    "anchors": [
+      "",
+      ""
+    ]
+  },
+  {
+    "_id": "sheetCells:200",
+    "_creationTime": 1785917000000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:2",
+    "rowId": "r5",
+    "columnId": "c6",
+    "rowOrder": 5,
+    "value": {
+      "kind": "number",
+      "value": 620000
+    }
+  },
+  {
+    "_id": "sheetCells:201",
+    "_creationTime": 1785917001000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:2",
+    "rowId": "r5",
+    "columnId": "c7",
+    "rowOrder": 5,
+    "value": {
+      "kind": "number",
+      "value": 1922000
+    },
+    "expression": "=`cell|spreadsheets:2|r5|c6`*perMinuteRate",
+    "anchors": [
+      ""
+    ]
+  },
+  {
+    "_id": "sheetCells:202",
+    "_creationTime": 1785917002000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:2",
+    "rowId": "r5",
+    "columnId": "c8",
+    "rowOrder": 5,
+    "value": {
+      "kind": "number",
+      "value": 0.4
+    },
+    "expression": "=`cell|spreadsheets:2|r5|c5`/`cell|spreadsheets:2|r5|c7`",
+    "anchors": [
+      "",
+      ""
+    ]
+  },
+  {
+    "_id": "sheetCells:203",
+    "_creationTime": 1785917003000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:2",
+    "rowId": "r6",
+    "columnId": "c1",
+    "rowOrder": 6,
+    "value": {
+      "kind": "text",
+      "value": "Vegetation cycle, 3 yr to 2 yr"
+    }
+  },
+  {
+    "_id": "sheetCells:204",
+    "_creationTime": 1785917004000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:2",
+    "rowId": "r6",
+    "columnId": "c2",
+    "rowOrder": 6,
+    "value": {
+      "kind": "text",
+      "value": "km / yr"
+    }
+  },
+  {
+    "_id": "sheetCells:205",
+    "_creationTime": 1785917005000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:2",
+    "rowId": "r6",
+    "columnId": "c3",
+    "rowOrder": 6,
+    "value": {
+      "kind": "number",
+      "value": 2400
+    }
+  },
+  {
+    "_id": "sheetCells:206",
+    "_creationTime": 1785917006000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:2",
+    "rowId": "r6",
+    "columnId": "c4",
+    "rowOrder": 6,
+    "value": {
+      "kind": "number",
+      "value": 310
+    }
+  },
+  {
+    "_id": "sheetCells:207",
+    "_creationTime": 1785917007000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:2",
+    "rowId": "r6",
+    "columnId": "c5",
+    "rowOrder": 6,
+    "value": {
+      "kind": "number",
+      "value": 744000
+    },
+    "expression": "=`cell|spreadsheets:2|r6|c3`*`cell|spreadsheets:2|r6|c4`",
+    "anchors": [
+      "",
+      ""
+    ]
+  },
+  {
+    "_id": "sheetCells:208",
+    "_creationTime": 1785917008000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:2",
+    "rowId": "r6",
+    "columnId": "c6",
+    "rowOrder": 6,
+    "value": {
+      "kind": "number",
+      "value": 410000
+    }
+  },
+  {
+    "_id": "sheetCells:209",
+    "_creationTime": 1785917009000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:2",
+    "rowId": "r6",
+    "columnId": "c7",
+    "rowOrder": 6,
+    "value": {
+      "kind": "number",
+      "value": 861000
+    },
+    "expression": "=`cell|spreadsheets:2|r6|c6`*perMinuteRate",
+    "anchors": [
+      ""
+    ]
+  },
+  {
+    "_id": "sheetCells:210",
+    "_creationTime": 1785917010000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:2",
+    "rowId": "r6",
+    "columnId": "c8",
+    "rowOrder": 6,
+    "value": {
+      "kind": "number",
+      "value": 0.9
+    },
+    "expression": "=`cell|spreadsheets:2|r6|c5`/`cell|spreadsheets:2|r6|c7`",
+    "anchors": [
+      "",
+      ""
+    ]
+  },
+  {
+    "_id": "sheetCells:211",
+    "_creationTime": 1785917011000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:2",
+    "rowId": "r7",
+    "columnId": "c1",
+    "rowOrder": 7,
+    "value": {
+      "kind": "text",
+      "value": "Pole replacement, class 4 and below"
+    }
+  },
+  {
+    "_id": "sheetCells:212",
+    "_creationTime": 1785917012000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:2",
+    "rowId": "r7",
+    "columnId": "c2",
+    "rowOrder": 7,
+    "value": {
+      "kind": "text",
+      "value": "each"
+    }
+  },
+  {
+    "_id": "sheetCells:213",
+    "_creationTime": 1785917013000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:2",
+    "rowId": "r7",
+    "columnId": "c3",
+    "rowOrder": 7,
+    "value": {
+      "kind": "number",
+      "value": 9800
+    }
+  },
+  {
+    "_id": "sheetCells:214",
+    "_creationTime": 1785917014000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:2",
+    "rowId": "r7",
+    "columnId": "c4",
+    "rowOrder": 7,
+    "value": {
+      "kind": "number",
+      "value": 120
+    }
+  },
+  {
+    "_id": "sheetCells:215",
+    "_creationTime": 1785917015000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:2",
+    "rowId": "r7",
+    "columnId": "c5",
+    "rowOrder": 7,
+    "value": {
+      "kind": "number",
+      "value": 1176000
+    },
+    "expression": "=`cell|spreadsheets:2|r7|c3`*`cell|spreadsheets:2|r7|c4`",
+    "anchors": [
+      "",
+      ""
+    ]
+  },
+  {
+    "_id": "sheetCells:216",
+    "_creationTime": 1785917016000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:2",
+    "rowId": "r7",
+    "columnId": "c6",
+    "rowOrder": 7,
+    "value": {
+      "kind": "number",
+      "value": 365000
+    }
+  },
+  {
+    "_id": "sheetCells:217",
+    "_creationTime": 1785917017000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:2",
+    "rowId": "r7",
+    "columnId": "c7",
+    "rowOrder": 7,
+    "value": {
+      "kind": "number",
+      "value": 1241000
+    },
+    "expression": "=`cell|spreadsheets:2|r7|c6`*perMinuteRate",
+    "anchors": [
+      ""
+    ]
+  },
+  {
+    "_id": "sheetCells:218",
+    "_creationTime": 1785917018000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:2",
+    "rowId": "r7",
+    "columnId": "c8",
+    "rowOrder": 7,
+    "value": {
+      "kind": "number",
+      "value": 0.9
+    },
+    "expression": "=`cell|spreadsheets:2|r7|c5`/`cell|spreadsheets:2|r7|c7`",
+    "anchors": [
+      "",
+      ""
+    ]
+  },
+  {
+    "_id": "sheetCells:219",
+    "_creationTime": 1785917019000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:2",
+    "rowId": "r8",
+    "columnId": "c1",
+    "rowOrder": 8,
+    "value": {
+      "kind": "text",
+      "value": "Undergrounding, Ironbridge flood section"
+    }
+  },
+  {
+    "_id": "sheetCells:220",
+    "_creationTime": 1785917020000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:2",
+    "rowId": "r8",
+    "columnId": "c2",
+    "rowOrder": 8,
+    "value": {
+      "kind": "text",
+      "value": "km"
+    }
+  },
+  {
+    "_id": "sheetCells:221",
+    "_creationTime": 1785917021000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:2",
+    "rowId": "r8",
+    "columnId": "c3",
+    "rowOrder": 8,
+    "value": {
+      "kind": "number",
+      "value": 910000
+    }
+  },
+  {
+    "_id": "sheetCells:222",
+    "_creationTime": 1785917022000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:2",
+    "rowId": "r8",
+    "columnId": "c4",
+    "rowOrder": 8,
+    "value": {
+      "kind": "number",
+      "value": 1.4
+    }
+  },
+  {
+    "_id": "sheetCells:223",
+    "_creationTime": 1785917023000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:2",
+    "rowId": "r8",
+    "columnId": "c5",
+    "rowOrder": 8,
+    "value": {
+      "kind": "number",
+      "value": 1274000
+    },
+    "expression": "=`cell|spreadsheets:2|r8|c3`*`cell|spreadsheets:2|r8|c4`",
+    "anchors": [
+      "",
+      ""
+    ]
+  },
+  {
+    "_id": "sheetCells:224",
+    "_creationTime": 1785917024000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:2",
+    "rowId": "r8",
+    "columnId": "c6",
+    "rowOrder": 8,
+    "value": {
+      "kind": "number",
+      "value": 260000
+    }
+  },
+  {
+    "_id": "sheetCells:225",
+    "_creationTime": 1785917025000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:2",
+    "rowId": "r8",
+    "columnId": "c7",
+    "rowOrder": 8,
+    "value": {
+      "kind": "number",
+      "value": 1092000
+    },
+    "expression": "=`cell|spreadsheets:2|r8|c6`*perMinuteRate",
+    "anchors": [
+      ""
+    ]
+  },
+  {
+    "_id": "sheetCells:226",
+    "_creationTime": 1785917026000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:2",
+    "rowId": "r8",
+    "columnId": "c8",
+    "rowOrder": 8,
+    "value": {
+      "kind": "number",
+      "value": 1.2
+    },
+    "expression": "=`cell|spreadsheets:2|r8|c5`/`cell|spreadsheets:2|r8|c7`",
+    "anchors": [
+      "",
+      ""
+    ]
+  },
+  {
+    "_id": "sheetCells:227",
+    "_creationTime": 1785917027000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:2",
+    "rowId": "r9",
+    "columnId": "c1",
+    "rowOrder": 9,
+    "value": {
+      "kind": "text",
+      "value": "Fault indicators"
+    }
+  },
+  {
+    "_id": "sheetCells:228",
+    "_creationTime": 1785917028000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:2",
+    "rowId": "r9",
+    "columnId": "c2",
+    "rowOrder": 9,
+    "value": {
+      "kind": "text",
+      "value": "each"
+    }
+  },
+  {
+    "_id": "sheetCells:229",
+    "_creationTime": 1785917029000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:2",
+    "rowId": "r9",
+    "columnId": "c3",
+    "rowOrder": 9,
+    "value": {
+      "kind": "number",
+      "value": 1600
+    }
+  },
+  {
+    "_id": "sheetCells:230",
+    "_creationTime": 1785917030000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:2",
+    "rowId": "r9",
+    "columnId": "c4",
+    "rowOrder": 9,
+    "value": {
+      "kind": "number",
+      "value": 96
+    }
+  },
+  {
+    "_id": "sheetCells:231",
+    "_creationTime": 1785917031000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:2",
+    "rowId": "r9",
+    "columnId": "c5",
+    "rowOrder": 9,
+    "value": {
+      "kind": "number",
+      "value": 153600
+    },
+    "expression": "=`cell|spreadsheets:2|r9|c3`*`cell|spreadsheets:2|r9|c4`",
+    "anchors": [
+      "",
+      ""
+    ]
+  },
+  {
+    "_id": "sheetCells:232",
+    "_creationTime": 1785917032000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:2",
+    "rowId": "r9",
+    "columnId": "c6",
+    "rowOrder": 9,
+    "value": {
+      "kind": "number",
+      "value": 84000
+    }
+  },
+  {
+    "_id": "sheetCells:233",
+    "_creationTime": 1785917033000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:2",
+    "rowId": "r9",
+    "columnId": "c7",
+    "rowOrder": 9,
+    "value": {
+      "kind": "number",
+      "value": 243600
+    },
+    "expression": "=`cell|spreadsheets:2|r9|c6`*perMinuteRate",
+    "anchors": [
+      ""
+    ]
+  },
+  {
+    "_id": "sheetCells:234",
+    "_creationTime": 1785917034000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:2",
+    "rowId": "r9",
+    "columnId": "c8",
+    "rowOrder": 9,
+    "value": {
+      "kind": "number",
+      "value": 0.6
+    },
+    "expression": "=`cell|spreadsheets:2|r9|c5`/`cell|spreadsheets:2|r9|c7`",
+    "anchors": [
+      "",
+      ""
+    ]
+  },
+  {
+    "_id": "sheetCells:235",
+    "_creationTime": 1785917035000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:2",
+    "rowId": "r10",
+    "columnId": "c1",
+    "rowOrder": 10,
+    "value": {
+      "kind": "text",
+      "value": "Programme"
+    }
+  },
+  {
+    "_id": "sheetCells:236",
+    "_creationTime": 1785917036000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:2",
+    "rowId": "r10",
+    "columnId": "c5",
+    "rowOrder": 10,
+    "value": {
+      "kind": "number",
+      "value": 6941600
+    },
+    "expression": "=SUM(`range|spreadsheets:2|r4|c5|r9|c5`)",
+    "anchors": [
+      ":"
+    ]
+  },
+  {
+    "_id": "sheetCells:237",
+    "_creationTime": 1785917037000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:2",
+    "rowId": "r10",
+    "columnId": "c6",
+    "rowOrder": 10,
+    "value": {
+      "kind": "number",
+      "value": 2919000
+    },
+    "expression": "=SUM(`range|spreadsheets:2|r4|c6|r9|c6`)",
+    "anchors": [
+      ":"
+    ]
+  },
+  {
+    "_id": "sheetCells:238",
+    "_creationTime": 1785917038000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:2",
+    "rowId": "r10",
+    "columnId": "c7",
+    "rowOrder": 10,
+    "value": {
+      "kind": "number",
+      "value": 9135600
+    },
+    "expression": "=SUM(`range|spreadsheets:2|r4|c7|r9|c7`)",
+    "anchors": [
+      ":"
+    ]
+  },
+  {
+    "_id": "sheetCells:239",
+    "_creationTime": 1785917039000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:2",
+    "rowId": "r10",
+    "columnId": "c8",
+    "rowOrder": 10,
+    "value": {
+      "kind": "number",
+      "value": 0.8
+    },
+    "expression": "=`cell|spreadsheets:2|r10|c5`/`cell|spreadsheets:2|r10|c7`",
+    "anchors": [
+      "",
+      ""
+    ]
+  },
+  {
+    "_id": "sheetCells:240",
+    "_creationTime": 1785917040000,
+    "projectId": "default",
+    "resourceId": "spreadsheets:2",
+    "rowId": "r12",
+    "columnId": "c1",
+    "rowOrder": 12,
+    "value": {
+      "kind": "text",
+      "value": "perMinuteRate is a project variable, 3.10 for FY26."
+    }
+  }
+]

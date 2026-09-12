@@ -1,0 +1,28 @@
+# Current editor revision timing. Only thresholds consumed by the resource
+# runtimes are declared; unimplemented retention or consolidation settings do
+# not appear here.
+
+revisions:
+  # When an editor stops accumulating operations and submits them as one change
+  # set. Whichever threshold is reached first wins.
+  #
+  # Editing produces far more operations than changes: typing a sentence and
+  # deleting half of it is dozens of operations that fold into one small splice.
+  # Submitting each one would be wasteful and would fill history with steps
+  # nobody wants to see. Waiting too long makes an edit invisible to collaborators
+  # and enlarges what a single undo reverses.
+  changeSets:
+    # Submit once this many operations have accumulated, before folding.
+    flushAfterOps: 50
+    # Submit this long after the first unsubmitted operation, whatever the count.
+    flushAfterMs: 2000
+
+  # How often an open editor re-reads the leader body it is holding.
+  #
+  # An editor with nothing outstanding of its own is a reader, and a reader that
+  # never reads again is showing the document as it was when the tab was opened.
+  # A read is skipped whenever the editor has unsubmitted operations, so this
+  # never overwrites work in progress; shortening it costs reads and lengthens
+  # nothing, widening it is how long another writer's change stays invisible.
+  sync:
+    everyMs: 5000

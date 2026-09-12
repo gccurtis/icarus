@@ -24,6 +24,11 @@
               nodejs_latest
               pnpm
 
+              rustc
+              cargo
+              rustfmt
+              postgresql
+
               # Language servers. Top-level attributes — the `nodePackages.*`
               # spellings for these are gone from nixpkgs.
               #

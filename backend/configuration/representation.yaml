@@ -1,0 +1,29 @@
+# The representation store: where the JSON tables live.
+#
+# One file per table, named for the table, under `directory`. The path is
+# relative to the process working directory — `app/` is the only place the
+# server is run from, so the default resolves to `app/data/`. Git-ignored.
+#
+# Server-model construction requires this exact path. A missing or blank value
+# fails startup; there is no built-in directory fallback.
+representation:
+  store:
+    directory: data
+
+  # The architecture checker requires this exact representation dependency graph.
+  domains:
+    agents: [content, core]
+    collaboration: [content, core]
+    content: [core]
+    core: []
+    data: [core]
+    documents: [content, core]
+    external: [core]
+    formulas: [content, core]
+    investigation: [content, core]
+    project-resources: [agents, content, core, documents, external, investigation, presentations, spreadsheets]
+    semantic: [content, core, documents, external, presentations, spreadsheets]
+    presentations: [content, core]
+    spreadsheets: [content, core, data, formulas]
+    templates: [content, core, documents, presentations, spreadsheets]
+    workspace: [core, external]

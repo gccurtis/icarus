@@ -1,0 +1,1170 @@
+[
+  {
+    "_id": "agentTasks:feeder12",
+    "_creationTime": 1788644880000,
+    "projectId": "default",
+    "threadId": "threads:task-feeder12",
+    "title": "Reconcile Feeder 12 relay logs against the outage record",
+    "instruction": "Take the relay logs for Feeder 12 between 03:10 and 04:40 and line them up against the outage record. Say where the two disagree and by how much. Do not speculate past the record.",
+    "personaId": "personas:grid-analyst",
+    "origin": {
+      "kind": "person"
+    },
+    "state": "running",
+    "execution": {
+      "kind": "grounded"
+    },
+    "tools": [
+      "retrieve",
+      "resource.read",
+      "finding.create",
+      "analysis.evaluate"
+    ],
+    "plan": [
+      {
+        "id": "export",
+        "title": "Read the relay export",
+        "state": "done"
+      },
+      {
+        "id": "align",
+        "title": "Align clocks against the SCADA master",
+        "state": "done",
+        "note": "Skew measured at 4 seconds, steady"
+      },
+      {
+        "id": "diff",
+        "title": "Diff events against the outage record",
+        "state": "active",
+        "note": "Log 4 of 7"
+      },
+      {
+        "id": "finding",
+        "title": "Write the finding",
+        "state": "pending"
+      },
+      {
+        "id": "report",
+        "title": "Report disagreements with magnitude",
+        "state": "pending"
+      }
+    ],
+    "outputs": [
+      {
+        "id": "o1",
+        "title": "Relay 12-B trips 90 seconds before the recorded outage",
+        "at": 1788645120000,
+        "detail": "Consistent across all three log files.",
+        "ref": {
+          "kind": "finding",
+          "id": "findings:1"
+        }
+      },
+      {
+        "id": "o2",
+        "title": "Two entries have no counterpart in the outage record",
+        "at": 1788645240000,
+        "detail": "03:41 and 03:44. Both are momentary.",
+        "ref": {
+          "kind": "spreadsheet",
+          "id": "spreadsheets:1"
+        }
+      },
+      {
+        "id": "o3",
+        "title": "Clock skew of about 4 seconds between the two sources",
+        "at": 1788645300000,
+        "detail": "Steady, so it can be corrected rather than argued about."
+      }
+    ],
+    "questions": [],
+    "createdBy": {
+      "kind": "user",
+      "userId": "users:1"
+    },
+    "startedAt": 1788644880000,
+    "revision": 1,
+    "updatedAt": 1788645360000,
+    "scope": {
+      "include": [
+        {
+          "select": "resources",
+          "refs": [
+            {
+              "kind": "spreadsheet",
+              "id": "spreadsheets:1"
+            },
+            {
+              "kind": "document",
+              "id": "documents:2"
+            }
+          ]
+        }
+      ],
+      "exclude": []
+    }
+  },
+  {
+    "_id": "agentTasks:minutes-41",
+    "_creationTime": 1788645420000,
+    "projectId": "default",
+    "threadId": "threads:task-minutes-41",
+    "title": "Recalculate outage minutes by substation",
+    "instruction": "When the outage minutes sheet changes, recompute the per-substation totals and note any substation whose total moved by more than five percent.",
+    "personaId": "personas:grid-analyst",
+    "origin": {
+      "kind": "automation",
+      "automationId": "automations:minutes",
+      "trigger": "resource-edited",
+      "ref": {
+        "kind": "spreadsheet",
+        "id": "spreadsheets:1"
+      }
+    },
+    "state": "running",
+    "execution": {
+      "kind": "grounded"
+    },
+    "tools": [
+      "retrieve",
+      "resource.read",
+      "finding.create",
+      "analysis.evaluate"
+    ],
+    "plan": [
+      {
+        "id": "read",
+        "title": "Read the sheet",
+        "state": "active"
+      },
+      {
+        "id": "totals",
+        "title": "Recompute the per-substation totals",
+        "state": "pending"
+      },
+      {
+        "id": "compare",
+        "title": "Compare with the previous run",
+        "state": "pending"
+      },
+      {
+        "id": "movers",
+        "title": "Note substations that moved more than five percent",
+        "state": "pending"
+      }
+    ],
+    "outputs": [],
+    "questions": [],
+    "createdBy": {
+      "kind": "system"
+    },
+    "startedAt": 1788645420000,
+    "revision": 1,
+    "updatedAt": 1788645420000
+  },
+  {
+    "_id": "agentTasks:substation14",
+    "_creationTime": 1788643560000,
+    "projectId": "default",
+    "threadId": "threads:task-substation14",
+    "title": "Draft the Substation 14 incident write-up",
+    "instruction": "Draft the incident write-up for Substation 14 using only findings marked accepted. Keep the register's numbering.",
+    "personaId": "personas:filing-editor",
+    "origin": {
+      "kind": "person"
+    },
+    "state": "running",
+    "execution": {
+      "kind": "grounded"
+    },
+    "tools": [
+      "resource.read",
+      "resource.write"
+    ],
+    "plan": [
+      {
+        "id": "collect",
+        "title": "Collect the accepted findings",
+        "state": "done",
+        "note": "Seven accepted, two still proposed"
+      },
+      {
+        "id": "position",
+        "title": "Draft the position",
+        "state": "active"
+      },
+      {
+        "id": "evidence",
+        "title": "Write the evidence section",
+        "state": "pending"
+      },
+      {
+        "id": "cost",
+        "title": "Write the cost section",
+        "state": "pending"
+      },
+      {
+        "id": "remedy",
+        "title": "Write the remedy and timetable",
+        "state": "pending"
+      }
+    ],
+    "outputs": [],
+    "questions": [
+      {
+        "id": "q1",
+        "text": "Two findings on the transformer bank are still marked proposed. Should I draft around them, or wait until they are accepted?",
+        "askedAt": 1788644400000,
+        "state": "open",
+        "stepId": "position",
+        "options": [
+          "Draft around them and mark the gaps",
+          "Wait until they are accepted",
+          "Draft them in as proposed"
+        ]
+      },
+      {
+        "id": "q2",
+        "text": "The register numbering for section 4 changed in the last filing. Keep the old numbering the accepted findings cite, or renumber to match?",
+        "askedAt": 1788644520000,
+        "state": "open",
+        "stepId": "position",
+        "options": [
+          "Keep the numbering the findings cite",
+          "Renumber to the latest register"
+        ]
+      }
+    ],
+    "createdBy": {
+      "kind": "user",
+      "userId": "default-user"
+    },
+    "startedAt": 1788643560000,
+    "revision": 1,
+    "updatedAt": 1788644400000,
+    "scope": {
+      "include": [
+        {
+          "select": "set",
+          "setId": "resourceSets:1"
+        }
+      ],
+      "exclude": []
+    }
+  },
+  {
+    "_id": "agentTasks:nightly-184",
+    "_creationTime": 1788591600000,
+    "projectId": "default",
+    "threadId": "threads:task-nightly-184",
+    "title": "Nightly outage digest — 6 September",
+    "instruction": "Summarise last night's outage reports by substation and flag anything that changes the filing position.",
+    "personaId": "personas:filing-editor",
+    "origin": {
+      "kind": "automation",
+      "automationId": "automations:nightly",
+      "trigger": "schedule"
+    },
+    "state": "finished",
+    "tools": [
+      "resource.read",
+      "resource.write"
+    ],
+    "plan": [
+      {
+        "id": "gather",
+        "title": "Gather last night's outage reports",
+        "state": "done"
+      },
+      {
+        "id": "summarise",
+        "title": "Summarise by substation",
+        "state": "pending"
+      },
+      {
+        "id": "flag",
+        "title": "Flag anything that changes the filing position",
+        "state": "pending"
+      }
+    ],
+    "outputs": [
+      {
+        "id": "o1",
+        "title": "Stopped before summarising",
+        "at": 1788591640000,
+        "detail": "The digest reads the regional outage feed through web.search, and Filing Editor does not have that tool. Nothing was written."
+      }
+    ],
+    "questions": [],
+    "createdBy": {
+      "kind": "system"
+    },
+    "startedAt": 1788591600000,
+    "finishedAt": 1788591640000,
+    "revision": 1,
+    "updatedAt": 1788591640000
+  },
+  {
+    "_id": "agentTasks:nightly-183",
+    "_creationTime": 1788505200000,
+    "projectId": "default",
+    "threadId": "threads:task-nightly-183",
+    "title": "Nightly outage digest — 5 September",
+    "instruction": "Summarise last night's outage reports by substation and flag anything that changes the filing position.",
+    "personaId": "personas:filing-editor",
+    "origin": {
+      "kind": "automation",
+      "automationId": "automations:nightly",
+      "trigger": "schedule"
+    },
+    "state": "finished",
+    "tools": [
+      "resource.read",
+      "resource.write"
+    ],
+    "plan": [
+      {
+        "id": "gather",
+        "title": "Gather last night's outage reports",
+        "state": "done"
+      },
+      {
+        "id": "summarise",
+        "title": "Summarise by substation",
+        "state": "done"
+      },
+      {
+        "id": "flag",
+        "title": "Flag anything that changes the filing position",
+        "state": "done"
+      }
+    ],
+    "outputs": [
+      {
+        "id": "o1",
+        "title": "Four substations reported; none changes the filing position",
+        "at": 1788505500000
+      },
+      {
+        "id": "o2",
+        "title": "Digest appended to the Winter readiness brief",
+        "at": 1788505560000,
+        "ref": {
+          "kind": "document",
+          "id": "documents:1"
+        }
+      }
+    ],
+    "questions": [],
+    "createdBy": {
+      "kind": "system"
+    },
+    "startedAt": 1788505200000,
+    "finishedAt": 1788505560000,
+    "reviewedBy": {
+      "kind": "user",
+      "userId": "users:1"
+    },
+    "revision": 1,
+    "updatedAt": 1788505560000
+  },
+  {
+    "_id": "agentTasks:nightly-182",
+    "_creationTime": 1788418800000,
+    "projectId": "default",
+    "threadId": "threads:task-nightly-182",
+    "title": "Nightly outage digest — 4 September",
+    "instruction": "Summarise last night's outage reports by substation and flag anything that changes the filing position.",
+    "personaId": "personas:filing-editor",
+    "origin": {
+      "kind": "automation",
+      "automationId": "automations:nightly",
+      "trigger": "schedule"
+    },
+    "state": "finished",
+    "tools": [
+      "resource.read",
+      "resource.write"
+    ],
+    "plan": [
+      {
+        "id": "gather",
+        "title": "Gather last night's outage reports",
+        "state": "done"
+      },
+      {
+        "id": "summarise",
+        "title": "Summarise by substation",
+        "state": "done"
+      },
+      {
+        "id": "flag",
+        "title": "Flag anything that changes the filing position",
+        "state": "done"
+      }
+    ],
+    "outputs": [
+      {
+        "id": "o1",
+        "title": "Two substations reported; nothing for the filing",
+        "at": 1788419100000,
+        "ref": {
+          "kind": "document",
+          "id": "documents:1"
+        }
+      }
+    ],
+    "questions": [],
+    "createdBy": {
+      "kind": "system"
+    },
+    "startedAt": 1788418800000,
+    "finishedAt": 1788419100000,
+    "reviewedBy": {
+      "kind": "user",
+      "userId": "users:1"
+    },
+    "revision": 1,
+    "updatedAt": 1788419100000
+  },
+  {
+    "_id": "agentTasks:nightly-181",
+    "_creationTime": 1788332400000,
+    "projectId": "default",
+    "threadId": "threads:task-nightly-181",
+    "title": "Nightly outage digest — 3 September",
+    "instruction": "Summarise last night's outage reports by substation and flag anything that changes the filing position.",
+    "personaId": "personas:filing-editor",
+    "origin": {
+      "kind": "automation",
+      "automationId": "automations:nightly",
+      "trigger": "schedule"
+    },
+    "state": "finished",
+    "tools": [
+      "resource.read",
+      "resource.write"
+    ],
+    "plan": [
+      {
+        "id": "gather",
+        "title": "Gather last night's outage reports",
+        "state": "done"
+      },
+      {
+        "id": "summarise",
+        "title": "Summarise by substation",
+        "state": "done"
+      },
+      {
+        "id": "flag",
+        "title": "Flag anything that changes the filing position",
+        "state": "done"
+      }
+    ],
+    "outputs": [
+      {
+        "id": "o1",
+        "title": "Substation 14 tripped again at 01:12; the write-up should mention it",
+        "at": 1788332760000,
+        "ref": {
+          "kind": "document",
+          "id": "documents:2"
+        }
+      },
+      {
+        "id": "o2",
+        "title": "Digest appended to the Winter readiness brief",
+        "at": 1788332820000,
+        "ref": {
+          "kind": "document",
+          "id": "documents:1"
+        }
+      }
+    ],
+    "questions": [],
+    "createdBy": {
+      "kind": "system"
+    },
+    "startedAt": 1788332400000,
+    "finishedAt": 1788332820000,
+    "reviewedBy": {
+      "kind": "user",
+      "userId": "users:2"
+    },
+    "revision": 1,
+    "updatedAt": 1788332820000
+  },
+  {
+    "_id": "agentTasks:citations-23",
+    "_creationTime": 1788638400000,
+    "projectId": "default",
+    "threadId": "threads:task-citations-23",
+    "title": "Check every citation in the Winter readiness brief",
+    "instruction": "For every citation in the Winter readiness brief, confirm the source carries the claim. Flag anything the source only implies.",
+    "personaId": "personas:source-checker",
+    "origin": {
+      "kind": "automation",
+      "automationId": "automations:citations",
+      "trigger": "resource-edited",
+      "ref": {
+        "kind": "document",
+        "id": "documents:1"
+      }
+    },
+    "state": "review",
+    "tools": [
+      "retrieve",
+      "resource.read",
+      "web.search"
+    ],
+    "plan": [
+      {
+        "id": "locate",
+        "title": "Locate every cited passage",
+        "state": "done"
+      },
+      {
+        "id": "quote",
+        "title": "Quote each with its page",
+        "state": "done"
+      },
+      {
+        "id": "decide",
+        "title": "Decide carried, implied or uncarried",
+        "state": "done"
+      },
+      {
+        "id": "list",
+        "title": "List uncarried claims first",
+        "state": "done"
+      }
+    ],
+    "outputs": [
+      {
+        "id": "o1",
+        "title": "Nine citations carried by their source",
+        "at": 1788638580000,
+        "detail": "No change needed."
+      },
+      {
+        "id": "o2",
+        "title": "Two citations the source only implies",
+        "at": 1788638640000,
+        "detail": "Both in the hardening paragraph. Neither is uncarried.",
+        "ref": {
+          "kind": "document",
+          "id": "documents:1"
+        }
+      }
+    ],
+    "questions": [],
+    "createdBy": {
+      "kind": "system"
+    },
+    "startedAt": 1788638400000,
+    "finishedAt": 1788638640000,
+    "revision": 1,
+    "updatedAt": 1788638640000
+  },
+  {
+    "_id": "agentTasks:citations-22",
+    "_creationTime": 1788553800000,
+    "projectId": "default",
+    "threadId": "threads:task-citations-22",
+    "title": "Check every citation in the Winter readiness brief",
+    "instruction": "For every citation in the Winter readiness brief, confirm the source carries the claim. Flag anything the source only implies.",
+    "personaId": "personas:source-checker",
+    "origin": {
+      "kind": "automation",
+      "automationId": "automations:citations",
+      "trigger": "resource-edited",
+      "ref": {
+        "kind": "document",
+        "id": "documents:1"
+      }
+    },
+    "state": "finished",
+    "tools": [
+      "retrieve",
+      "resource.read",
+      "web.search"
+    ],
+    "plan": [
+      {
+        "id": "locate",
+        "title": "Locate every cited passage",
+        "state": "done"
+      },
+      {
+        "id": "quote",
+        "title": "Quote each with its page",
+        "state": "done"
+      },
+      {
+        "id": "decide",
+        "title": "Decide carried, implied or uncarried",
+        "state": "done"
+      },
+      {
+        "id": "list",
+        "title": "List uncarried claims first",
+        "state": "done"
+      }
+    ],
+    "outputs": [
+      {
+        "id": "o1",
+        "title": "Nine citations carried; none flagged",
+        "at": 1788553980000
+      }
+    ],
+    "questions": [],
+    "createdBy": {
+      "kind": "system"
+    },
+    "startedAt": 1788553800000,
+    "finishedAt": 1788553980000,
+    "reviewedBy": {
+      "kind": "user",
+      "userId": "users:3"
+    },
+    "revision": 1,
+    "updatedAt": 1788553980000
+  },
+  {
+    "_id": "agentTasks:citations-21",
+    "_creationTime": 1788379200000,
+    "projectId": "default",
+    "threadId": "threads:task-citations-21",
+    "title": "Check every citation in the Winter readiness brief",
+    "instruction": "For every citation in the Winter readiness brief, confirm the source carries the claim. Flag anything the source only implies.",
+    "personaId": "personas:source-checker",
+    "origin": {
+      "kind": "automation",
+      "automationId": "automations:citations",
+      "trigger": "resource-edited",
+      "ref": {
+        "kind": "document",
+        "id": "documents:1"
+      }
+    },
+    "state": "finished",
+    "tools": [
+      "retrieve",
+      "resource.read",
+      "web.search"
+    ],
+    "plan": [
+      {
+        "id": "locate",
+        "title": "Locate every cited passage",
+        "state": "done"
+      },
+      {
+        "id": "quote",
+        "title": "Quote each with its page",
+        "state": "pending"
+      },
+      {
+        "id": "decide",
+        "title": "Decide carried, implied or uncarried",
+        "state": "pending"
+      },
+      {
+        "id": "list",
+        "title": "List uncarried claims first",
+        "state": "pending"
+      }
+    ],
+    "outputs": [
+      {
+        "id": "o1",
+        "title": "Could not read the connector",
+        "at": 1788379320000,
+        "detail": "The SharePoint connector refused the read, so no passage could be quoted. Nothing was decided."
+      }
+    ],
+    "questions": [],
+    "createdBy": {
+      "kind": "system"
+    },
+    "startedAt": 1788379200000,
+    "finishedAt": 1788379320000,
+    "reviewedBy": {
+      "kind": "user",
+      "userId": "users:3"
+    },
+    "revision": 1,
+    "updatedAt": 1788379320000
+  },
+  {
+    "_id": "agentTasks:glossary-6",
+    "_creationTime": 1788559200000,
+    "projectId": "default",
+    "threadId": "threads:task-glossary-6",
+    "title": "Refresh the interconnect glossary",
+    "instruction": "When a document is created, add any interconnect term it introduces to the glossary with the sentence that defines it.",
+    "personaId": "personas:source-checker",
+    "origin": {
+      "kind": "automation",
+      "automationId": "automations:glossary",
+      "trigger": "resource-created"
+    },
+    "state": "review",
+    "tools": [
+      "retrieve",
+      "resource.read",
+      "resource.write"
+    ],
+    "plan": [
+      {
+        "id": "read",
+        "title": "Read the new document",
+        "state": "done"
+      },
+      {
+        "id": "terms",
+        "title": "Find the terms it introduces",
+        "state": "done",
+        "note": "Four found"
+      },
+      {
+        "id": "write",
+        "title": "Add each to the glossary with its defining sentence",
+        "state": "done"
+      }
+    ],
+    "outputs": [
+      {
+        "id": "o1",
+        "title": "Four terms added to the glossary",
+        "at": 1788559380000,
+        "detail": "Bank rating, load-tap changer, N-1 contingency, transfer capability.",
+        "ref": {
+          "kind": "document",
+          "id": "documents:3"
+        }
+      }
+    ],
+    "questions": [],
+    "createdBy": {
+      "kind": "system"
+    },
+    "startedAt": 1788559200000,
+    "finishedAt": 1788559380000,
+    "revision": 1,
+    "updatedAt": 1788559380000
+  },
+  {
+    "_id": "agentTasks:hardening-2",
+    "_creationTime": 1788386400000,
+    "projectId": "default",
+    "threadId": "threads:task-hardening-2",
+    "title": "Recompute the hardening cost model",
+    "instruction": "Re-run the hardening cost model against the current outage totals and report the three programmes whose cost moved the most.",
+    "personaId": "personas:grid-analyst",
+    "origin": {
+      "kind": "automation",
+      "automationId": "automations:hardening",
+      "trigger": "manual"
+    },
+    "state": "finished",
+    "tools": [
+      "retrieve",
+      "resource.read",
+      "analysis.evaluate"
+    ],
+    "plan": [
+      {
+        "id": "totals",
+        "title": "Read the current outage totals",
+        "state": "done"
+      },
+      {
+        "id": "model",
+        "title": "Run the hardening cost model",
+        "state": "done"
+      },
+      {
+        "id": "movers",
+        "title": "Report the three programmes that moved most",
+        "state": "done"
+      }
+    ],
+    "outputs": [
+      {
+        "id": "o1",
+        "title": "Undergrounding moved most: up 2,100,000",
+        "at": 1788386880000,
+        "ref": {
+          "kind": "spreadsheet",
+          "id": "spreadsheets:2"
+        }
+      },
+      {
+        "id": "o2",
+        "title": "Vegetation and recloser programmes moved under one percent",
+        "at": 1788386940000
+      }
+    ],
+    "questions": [],
+    "createdBy": {
+      "kind": "user",
+      "userId": "users:2"
+    },
+    "startedAt": 1788386400000,
+    "finishedAt": 1788386940000,
+    "reviewedBy": {
+      "kind": "user",
+      "userId": "users:2"
+    },
+    "revision": 1,
+    "updatedAt": 1788386940000
+  },
+  {
+    "_id": "agentTasks:hardening-1",
+    "_creationTime": 1787436000000,
+    "projectId": "default",
+    "threadId": "threads:task-hardening-1",
+    "title": "Recompute the hardening cost model",
+    "instruction": "Re-run the hardening cost model against the current outage totals and report the three programmes whose cost moved the most.",
+    "personaId": "personas:grid-analyst",
+    "origin": {
+      "kind": "automation",
+      "automationId": "automations:hardening",
+      "trigger": "manual"
+    },
+    "state": "finished",
+    "tools": [
+      "retrieve",
+      "resource.read",
+      "analysis.evaluate"
+    ],
+    "plan": [
+      {
+        "id": "totals",
+        "title": "Read the current outage totals",
+        "state": "done"
+      },
+      {
+        "id": "model",
+        "title": "Run the hardening cost model",
+        "state": "done"
+      },
+      {
+        "id": "movers",
+        "title": "Report the three programmes that moved most",
+        "state": "done"
+      }
+    ],
+    "outputs": [
+      {
+        "id": "o1",
+        "title": "Three programmes recomputed; no mover over five percent",
+        "at": 1787436600000,
+        "ref": {
+          "kind": "spreadsheet",
+          "id": "spreadsheets:2"
+        }
+      },
+      {
+        "id": "o2",
+        "title": "Model inputs dated 20 August",
+        "at": 1787436660000
+      }
+    ],
+    "questions": [],
+    "createdBy": {
+      "kind": "user",
+      "userId": "users:2"
+    },
+    "startedAt": 1787436000000,
+    "finishedAt": 1787436660000,
+    "reviewedBy": {
+      "kind": "user",
+      "userId": "users:2"
+    },
+    "revision": 1,
+    "updatedAt": 1787436660000
+  },
+  {
+    "_id": "agentTasks:storm",
+    "_creationTime": 1788559200000,
+    "projectId": "default",
+    "threadId": "threads:task-storm",
+    "title": "Summarise winter storm precedents in neighbouring utilities",
+    "instruction": "Find how neighbouring utilities described winter storm hardening in their last two filings.",
+    "personaId": "personas:grid-analyst",
+    "origin": {
+      "kind": "person"
+    },
+    "state": "review",
+    "tools": [
+      "retrieve",
+      "resource.read",
+      "finding.create",
+      "analysis.evaluate",
+      "web.search"
+    ],
+    "plan": [
+      {
+        "id": "find",
+        "title": "Find the last two filings for each neighbouring utility",
+        "state": "done"
+      },
+      {
+        "id": "read",
+        "title": "Read the hardening sections",
+        "state": "done"
+      },
+      {
+        "id": "compare",
+        "title": "Compare the language against ours",
+        "state": "done"
+      },
+      {
+        "id": "summarise",
+        "title": "Summarise six precedents",
+        "state": "done"
+      }
+    ],
+    "outputs": [
+      {
+        "id": "o1",
+        "title": "Six precedents summarised, two with undergrounding programmes",
+        "at": 1788559920000,
+        "ref": {
+          "kind": "finding",
+          "id": "findings:2"
+        }
+      },
+      {
+        "id": "o2",
+        "title": "Neighbouring filings quote customer-minutes, not outage counts",
+        "at": 1788560040000,
+        "detail": "Our brief should do the same or say why not."
+      }
+    ],
+    "questions": [],
+    "createdBy": {
+      "kind": "user",
+      "userId": "users:2"
+    },
+    "startedAt": 1788559200000,
+    "finishedAt": 1788560040000,
+    "revision": 1,
+    "updatedAt": 1788560040000,
+    "scope": {
+      "include": [
+        {
+          "select": "resources",
+          "refs": [
+            {
+              "kind": "document",
+              "id": "documents:1"
+            },
+            {
+              "kind": "presentation",
+              "id": "presentations:4"
+            }
+          ]
+        }
+      ],
+      "exclude": []
+    }
+  },
+  {
+    "_id": "agentTasks:vegetation",
+    "_creationTime": 1788472800000,
+    "projectId": "default",
+    "threadId": "threads:task-vegetation",
+    "title": "Rebuild the vegetation-management comparison",
+    "instruction": "Rebuild the vegetation-management comparison with this quarter's spans included.",
+    "personaId": "personas:grid-analyst",
+    "origin": {
+      "kind": "person"
+    },
+    "state": "finished",
+    "tools": [
+      "retrieve",
+      "resource.read",
+      "finding.create",
+      "analysis.evaluate"
+    ],
+    "plan": [
+      {
+        "id": "spans",
+        "title": "Read this quarter's spans",
+        "state": "done"
+      },
+      {
+        "id": "map",
+        "title": "Map spans to feeders",
+        "state": "pending",
+        "note": "The span table changed shape mid-run"
+      },
+      {
+        "id": "compare",
+        "title": "Rebuild the comparison",
+        "state": "pending"
+      }
+    ],
+    "outputs": [
+      {
+        "id": "o1",
+        "title": "Stopped rather than guess at the mapping",
+        "at": 1788474000000,
+        "detail": "The span table gained two columns partway through the read, and the feeder mapping no longer lines up. Someone should confirm the new columns before this runs again."
+      }
+    ],
+    "questions": [],
+    "createdBy": {
+      "kind": "user",
+      "userId": "default-user"
+    },
+    "startedAt": 1788472800000,
+    "finishedAt": 1788474000000,
+    "reviewedBy": {
+      "kind": "user",
+      "userId": "default-user"
+    },
+    "revision": 1,
+    "updatedAt": 1788474000000
+  },
+  {
+    "_id": "agentTasks:objections",
+    "_creationTime": 1788127200000,
+    "projectId": "default",
+    "threadId": "threads:task-objections",
+    "title": "Argue against the undergrounding case",
+    "instruction": "Take the undergrounding case at its strongest and list the objections a commissioner would raise, each with what would answer it.",
+    "personaId": "personas:skeptic",
+    "origin": {
+      "kind": "automation",
+      "automationId": "automations:objections",
+      "trigger": "manual"
+    },
+    "state": "finished",
+    "tools": [
+      "retrieve",
+      "resource.read"
+    ],
+    "plan": [
+      {
+        "id": "steelman",
+        "title": "State the case at its strongest",
+        "state": "done"
+      },
+      {
+        "id": "premises",
+        "title": "Find the premise each part depends on",
+        "state": "done"
+      },
+      {
+        "id": "objections",
+        "title": "Raise the objection a commissioner would",
+        "state": "done"
+      },
+      {
+        "id": "answers",
+        "title": "Say what would answer each",
+        "state": "done"
+      }
+    ],
+    "outputs": [
+      {
+        "id": "o1",
+        "title": "Four objections, each with what would answer it",
+        "at": 1788127680000,
+        "ref": {
+          "kind": "document",
+          "id": "documents:4"
+        }
+      },
+      {
+        "id": "o2",
+        "title": "The cost-per-customer-minute premise is the weakest",
+        "at": 1788127680000,
+        "detail": "It rests on one storm season."
+      }
+    ],
+    "questions": [],
+    "createdBy": {
+      "kind": "user",
+      "userId": "default-user"
+    },
+    "startedAt": 1788127200000,
+    "finishedAt": 1788127680000,
+    "reviewedBy": {
+      "kind": "user",
+      "userId": "default-user"
+    },
+    "revision": 1,
+    "updatedAt": 1788127680000
+  },
+  {
+    "_id": "agentTasks:budget",
+    "_creationTime": 1786831200000,
+    "projectId": "default",
+    "threadId": "threads:task-budget",
+    "title": "Attack the 46,000,000 budget basis",
+    "instruction": "Find the weakest premise behind the 46,000,000 hardening budget and say what would have to be shown to save it.",
+    "personaId": "personas:skeptic",
+    "origin": {
+      "kind": "person"
+    },
+    "state": "finished",
+    "tools": [
+      "retrieve",
+      "resource.read"
+    ],
+    "plan": [
+      {
+        "id": "premises",
+        "title": "List the premises the budget rests on",
+        "state": "done"
+      },
+      {
+        "id": "weakest",
+        "title": "Find the weakest",
+        "state": "done"
+      },
+      {
+        "id": "save",
+        "title": "Say what would save it",
+        "state": "done"
+      }
+    ],
+    "outputs": [
+      {
+        "id": "o1",
+        "title": "The budget assumes 2026 storm frequency repeats",
+        "at": 1786831500000,
+        "detail": "Two seasons of data would save it. One will not."
+      },
+      {
+        "id": "o2",
+        "title": "Two objections written up",
+        "at": 1786831500000,
+        "ref": {
+          "kind": "document",
+          "id": "documents:4"
+        }
+      }
+    ],
+    "questions": [],
+    "createdBy": {
+      "kind": "user",
+      "userId": "users:1"
+    },
+    "startedAt": 1786831200000,
+    "finishedAt": 1786831500000,
+    "reviewedBy": {
+      "kind": "user",
+      "userId": "users:1"
+    },
+    "revision": 1,
+    "updatedAt": 1786831500000
+  }
+]
