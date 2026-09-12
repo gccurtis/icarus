@@ -5,14 +5,14 @@ evidence before acting. Never copy credentials into this file.
 
 ## Snapshot
 
-- Updated: 2026-09-12T01:31:34-04:00
-- Status: Rust backend design worktree created; current Markdown wiki copied;
-  reusable model template translated to Rust
+- Updated: 2026-09-12T15:40:21-04:00
+- Status: Rust backend scaffold and Wiki design branch active; Rust model and
+  persistence-table templates documented
 - Worktree: `/home/jakul/cyberia/icarus-worktrees/rust-backend/`
 - Branch: `work/rust-backend`
 - Starting/base commit: `1f284fc07852e1256c52b07a393b43f5195ba5f8`
   from `work/pure-functions`
-- Verified content commit: `55d6c57` (`design Rust model purity template`)
+- Current base before the table-template update: `57c6149`
 - Eventual integration target: not yet settled; no merge, rebase, or push to
   `main` is authorized
 - Lead: root; no delegated workers
@@ -60,7 +60,7 @@ Acceptance for this step:
 
 | Owner | Owned paths / work | Read-only or excluded paths | Acceptance check |
 | --- | --- | --- | --- |
-| Lead | `.agents/tasks/rust-backend/`, `wiki/templates/model.md`, copied current wiki paths | Original `pure-functions` worktree; product implementation; `main` | Exact wiki comparisons, Markdown checks, reviewed diff |
+| Lead | `.agents/tasks/rust-backend/`, Rust Wiki templates, copied current wiki paths | Dirty user work in `main` | Markdown structure checks and reviewed diff |
 
 The branch intentionally begins at pure-functions commit `1f284fc` rather than
 `main`, because the requested wiki archive and replacement reference material
@@ -77,6 +77,10 @@ live on that branch.
   ownership, mandatory state construction, associated port types, state
   transitions, staged/immediate/read-only commit modes, concurrency obligations,
   explicit mutator traits, runtime singleton binding, and intended checker names.
+- Added `wiki/templates/table.md` from the current user-authored skeleton. It
+  now documents the source map, exact DDL, expanded column summary, per-column
+  contracts, keys and relationships, row invariants/admission/retention,
+  transaction/concurrency behavior, tests, and known limitations.
 
 ## Verification evidence
 
@@ -87,6 +91,8 @@ live on that branch.
 | `cmp` runtime placeholders | Rust vs. current pure-functions worktree | Both exact zero-byte matches |
 | `git diff --check` | Current documentation diff | Passed |
 | Rust/TypeScript token scan | Rust template | No TypeScript paths or syntax remain |
+| `git diff --check` | Table template update | Passed |
+| Heading/fence inspection | Table template update | Required level-two/three hierarchy present; 5 balanced fenced blocks |
 
 No product build or tests were run: this slice adds documentation only, and this
 worktree has no installed dependencies. No Rust code exists to compile yet.
@@ -108,12 +114,15 @@ worktree has no installed dependencies. No Rust code exists to compile yet.
   not be reported as implemented until they have adversarial mutation tests.
 - The existing configuration model reference remains TypeScript by explicit
   user direction; it will be corrected later.
-- Next: use `wiki/systems/server-runtime.md` to design the Rust crate/module
-  boundaries and the authenticated capability gateway before scaffolding code.
+- Next: instantiate the table template for the first PostgreSQL table, then use
+  `wiki/systems/server-runtime.md` to connect persistence ownership to the
+  authenticated capability gateway.
 
 ## Publication / handoff
 
-- Commits created by this task: `55d6c57` plus this handoff status update
-- Push state: published to `origin/work/rust-backend` on completion
+- Commits created by this task: prior Rust-template commits plus the table
+  template update containing this handoff
+- Push state: table-template update published to
+  `origin/work/rust-backend` on completion
 - Merge/rebase/main publication: not authorized
 - Worktree retained at the path above
