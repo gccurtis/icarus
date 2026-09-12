@@ -37,26 +37,16 @@ frozen acquired facade.
 
 ```mermaid
 flowchart LR
-    YAML["Server configuration"] --> Admit["requiredPublishedNumber"]
-    Admit --> Input["ClientConfigurationInput<br/>13 finite numbers"]
-    Input --> Create["createConfigurationState(input)"]
-    Create --> State[("ConfigurationState<br/>13 readonly primitive fields")]
+    Input["ClientConfigurationInput"] --> Create["createConfigurationState(input)"]
+    Create --> State[("ConfigurationState")]
     State --> Bind["bindConfiguration(state)"]
-    Bind --> Adapter["ConfigurationAdapter<br/>runtime only"]
-    Adapter -->|"acquire(undefined)"| Port["AcquiredConfigurationPort<br/>getNumber + commit"]
-    Port -->|"getNumber(key)"| Entry["getNumber(state, key)"]
-    Entry --> Select["selectNumber(state, key)"]
-    Select --> State
-    Port -->|"commit()"| Noop["guarded read-only no-op"]
+    Bind --> Adapter["ConfigurationAdapter · runtime only"]
+    Adapter -->|"acquire(undefined)"| Port["AcquiredConfigurationPort"]
+    Port -->|"getNumber(key)"| Operation["getNumber(state, key)"]
+    Operation --> Helper["selectNumber(state, key)"]
+    Port -->|"commit()"| Commit["read-only no-op"]
     Adapter -->|"release(port)"| Released["lease invalid"]
-    Adapter -->|"close()"| Closed["workspace lifetime ended"]
-
-    classDef boundary fill:#2d2925,stroke:#b77b55,color:#fff
-    classDef pure fill:#eff4ec,stroke:#4e7b5d,color:#172019
-    classDef data fill:#eee8df,stroke:#8c7761,color:#211d18
-    class YAML,Admit,Create,Bind,Adapter boundary
-    class Entry,Select pure
-    class Input,State,Port data
+    Adapter -->|"close()"| Closed["client model ended"]
 ```
 
 ## Source map
