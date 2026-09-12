@@ -7,7 +7,7 @@
 | Runtime binding | `app/src/lib/runtime/client/models/build.ts` |
 | Lifetime | `client-workspace` |
 | Commit mode | `read-only` |
-| Migration status | First complete pure-islands model slice |
+
 
 ## Purpose and ownership
 

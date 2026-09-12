@@ -1,243 +1,457 @@
+---
+name: {{Model name}}
+language: Rust
+environment: server
+model-directory: {{path/to/src/model/...}}
+runtime-construction: {{path/to/src/runtime/models/build.rs}}
+runtime-binding: {{path/to/src/runtime/models/bind.rs}}
+commit-mode: {{staged, immediate, or read-only}}
+---
+
 # {{Model name}} model
 
-<!--
-Copy this file to wiki/models/<model-name>.md and replace every {{placeholder}}.
-Keep the document synchronized with production source. Show exact signatures and
-meaningful implementation code; do not use pseudocode where the real code is
-short enough to review directly.
--->
-
-| Property | Value |
-| --- | --- |
-| Environment | `{{client or server}}` |
-| Model directory | `{{src/lib/model/...}}` |
-| Runtime binding | `{{src/lib/runtime/...}}` |
-| Lifetime | `{{lifetime literal}}` |
-| Commit mode | `{{staged, immediate, or read-only}}` |
-| Migration status | `{{status}}` |
+> Copy this file to `wiki/models/<model-name>.md` and replace every
+> `{{placeholder}}`. Keep the document synchronized with production source.
+> Show exact signatures and meaningful implementation code; do not use
+> pseudocode where the real code is short enough to review directly.
 
 ## Purpose and ownership
 
 `{{Model name}}` owns {{state and behavior this model owns}}.
 
-It does not own {{important neighboring responsibilities}}.
+Its public consumers receive {{the acquired port or translated values}}.
 
-Its public consumers receive {{the acquired port or translated values}}, never
-{{raw state, the outer adapter, infrastructure, or another forbidden surface}}.
+`{{Model name}}` is owned by the server runtime. The runtime creates exactly
+one production instance for its process and owns that instance until shutdown.
+Tests may construct isolated state and adapters without creating additional
+production singletons.
 
-## Complete architecture
+## Purity and authority boundary
 
-```mermaid
-flowchart LR
-    Input["Admitted input"] --> Create["create…State(input)"]
-    Create --> State[("…State")]
-    State --> Bind["bind…(state, dependencies)"]
-    Bind --> Adapter["…Adapter · runtime only"]
-    Adapter -->|"acquire(context)"| Port["Acquired…Port"]
-    Port -->|"operation(args)"| Operation["operation(state, args, ports)"]
-    Operation --> Helper["supporting pure function"]
-    Port -->|"commit()"| Commit["publish/checkpoint/no-op"]
-    Adapter -->|"release(port)"| Released["lease invalid"]
-    Adapter -->|"close()"| Closed["model lifetime ended"]
-```
+- State is data only. It contains no function pointers, closures, adapters,
+  locks, clocks, random generators, environment access, or global handles.
+- Model operations are free functions. State is always an explicit first
+  argument such as `get_body(&state)`; behavior is never attached to state as
+  an inherent method or getter.
+- Queries borrow state immutably and return values.
+- Commands return a new state snapshot and their result. They never mutate the
+  supplied state.
+- An operation may call an explicitly supplied interface with mutators. Such an
+  interface is authority passed by the caller, never discovered through globals,
+  runtime registries, environment variables, or imports.
+- Model modules import only their own model modules and approved pure
+  `core`/`std` types. Runtime binding owns infrastructure and external-crate
+  adaptation.
+- The adapter is the only owner allowed to replace the committed state snapshot.
 
 ## Source map
 
-| File | Role | May contain authority? |
+| File | Role |
+| --- | --- |
+| `mod.rs` | Closed module graph and deliberate crate-visible exports |
+| `state.rs` | Data-only state snapshot |
+| `types/{{category}}.rs` | Exact input, value, context, command, result, and error contracts |
+| `port.rs` | Acquired port contract and state-to-port adapter |
+| `methods/{{operation}}/{{operation}}.rs` | {{Describe the public free model operation}} |
+| `methods/{{operation}}/{{helper}}.rs` | {{Describe the supporting pure operation}} |
+| `runtime/.../models/build.rs` | Mandatory pure dependency-to-state construction |
+| `runtime/.../models/bind.rs` | Singleton adapter binding and runtime registration |
+| `runtime/.../models/types.rs` | Runtime-only acquisition context and adapter contracts |
+| `tests/...` | Construction, pure-operation, transition, and lifecycle evidence |
+
+## State
+
+{{Describe every state field, its type, and its invariant. Explain whether
+snapshots are cloned directly or use persistent/atomically shared values.}}
+
+```rust
+// state.rs
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) struct {{StateType}} {
+    /// {{Description of what the field represents.}}
+    pub(crate) {{state_field}}: {{StateValueType}},
+}
+
+// types/state.rs
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) struct {{StateValueType}} {
+    // Exact data fields.
+}
+```
+
+| Field | Type | Description |
 | --- | --- | --- |
-| `state.ts` | Stored fields and the runtime-only state constructor | No |
-| `types.ts` | Exact input, value, context, and command contracts | No |
-| `port.ts` | Runtime adapter and acquired facade binding | Boundary only |
-| `methods/<operation>/<operation>.ts` | Public free model operation | No |
-| `methods/<operation>/<helper>.ts` | Supporting pure operation | No |
-| `runtime/.../models/build.ts` | State construction, binding, acquisition, translation, teardown | Yes |
-| `test/...` | Pure-operation and lifecycle evidence | Test only |
+| `{{state_field}}` | `{{StateValueType}}` | {{Description of what the field represents}} |
 
-## Input and state
+State snapshots are treated as immutable after construction. Rust field
+visibility supports module access; architecture checks, rather than public
+constructors on the state type, enforce that production construction occurs only
+in runtime.
 
-Describe where the input is admitted, what is copied, and why every stored field
-belongs to this model. State must contain data fields only.
+## Runtime construction
 
-```ts
-export type {{InputType}} = {
-  readonly {{inputField}}: {{inputValueType}};
-};
+`create_model_state` is mandatory even when construction is trivial. It is a
+pure, independently testable translation from explicit runtime dependencies, if
+any, into the exact initial state. It must not read ambient process state.
 
-export type {{StateType}} = {
-  readonly {{stateField}}: {{stateValueType}};
-};
-
-export const {{createState}} = (input: {{InputType}}): {{StateType}} => ({
-  {{stateField}}: input.{{inputField}}
-});
+```rust
+// runtime/.../models/build.rs
+pub(crate) fn {{create_model_state}}(
+    {{dependencies_if_any}}
+) -> {{StateType}} {
+    {{StateType}} {
+        {{state_field}}: {{translated_dependency}},
+    }
+}
 ```
 
-### Stored fields
+For a model with no dependencies, retain the boundary with a zero-argument
+function:
 
-| Field | Type | Source | Meaning |
-| --- | --- | --- | --- |
-| `{{stateField}}` | `{{stateValueType}}` | `input.{{inputField}}` | {{meaning}} |
-
-## Adapter and acquired port
-
-Explain the distinction between the runtime-only adapter and the narrower facade
-received by a consumer. Document facade identity, provenance checks, invalidation,
-commit behavior, and whether `close()` exists.
-
-```ts
-export type {{OperationsType}} = {
-  readonly {{operation}}: ({{arguments}}) => {{resultType}};
-};
-
-export type {{AcquiredPortType}} = Readonly<{{OperationsType}}> & {
-  readonly commit: () => {{commitResultType}};
-};
-
-export type {{AdapterType}} = {
-  readonly lifetime: "{{lifetime literal}}";
-  readonly commitMode: "{{commit mode}}";
-  readonly acquire: (context: {{ContextType}}) => {{AcquiredPortType}};
-  readonly release: (port: {{AcquiredPortType}}) => void;
-  readonly close: () => void;
-};
+```rust
+pub(crate) fn {{create_model_state}}() -> {{StateType}} {
+    {{StateType}} {
+        {{state_field}}: {{initial_value}},
+    }
+}
 ```
 
-### Lifecycle
+Document the construction test that supplies controlled dependencies and asserts
+the complete resulting state.
 
-```mermaid
-stateDiagram-v2
-    [*] --> Open: acquire(context)
-    Open --> Open: operation(...)
-    Open --> Open: commit()
-    Open --> Released: release(port)
-    Open --> Closed: adapter.close()
-    Released --> Refused: any extracted or facade call
-    Closed --> Refused: acquire or existing facade call
+## Runtime adapter contract
+
+Rust uses an associated port type rather than erasing each model's distinct port
+behind `dyn Any`.
+
+```rust
+// runtime/.../models/types.rs
+pub(crate) trait RuntimeAdapter {
+    type Port;
+
+    fn acquire(
+        &self,
+        context: &RuntimeAcquisitionContext,
+    ) -> Result<Self::Port, AdapterError>;
+
+    fn release(&self, port: Self::Port) -> Result<(), AdapterError>;
+
+    fn close(&self) -> Result<(), AdapterError>;
+}
+```
+
+`RuntimeAcquisitionContext` is a small runtime-owned lifecycle context. It is
+not a container for user input, model dependencies, other models, or ambient
+authority. A model that does not need it accepts `_context` and ignores it.
+
+## Adapter
+
+{{Describe the private committed snapshot, acquisition behavior, revision or
+conflict mechanism, release behavior, and shutdown behavior. The exact locking
+or transaction primitive belongs here, never in state or a model operation.}}
+
+```rust
+// port.rs
+pub(crate) struct {{ModelAdapter}} {
+    // Private committed snapshot and lifecycle mechanism.
+}
+
+pub(crate) struct {{ModelPort}} {
+    // Private base revision, draft snapshot, and publication handle.
+    // This type is intentionally not Clone.
+}
+
+pub(crate) fn {{bind_state}}(
+    state: {{StateType}},
+) -> {{ModelAdapter}} {
+    {{ModelAdapter}} {
+        // Bind the initial committed snapshot.
+    }
+}
+
+impl RuntimeAdapter for {{ModelAdapter}} {
+    type Port = {{ModelPort}};
+
+    fn acquire(
+        &self,
+        _context: &RuntimeAcquisitionContext,
+    ) -> Result<Self::Port, AdapterError> {
+        // Capture a base revision and create a private draft snapshot.
+    }
+
+    fn release(&self, port: Self::Port) -> Result<(), AdapterError> {
+        // Consuming the port makes later use impossible.
+    }
+
+    fn close(&self) -> Result<(), AdapterError> {
+        // Refuse future acquisition and resolve open resources.
+    }
+}
 ```
 
 | Transition | Guarantee |
 | --- | --- |
-| `acquire(context)` | {{fresh facade, scoped stage, snapshot, or transaction rule}} |
-| `commit()` | {{atomic publication, checkpoint, or documented no-op}} |
-| `release(port)` | {{discard/release behavior and idempotency rule}} |
-| `close()` | {{lifetime teardown and later-call behavior}} |
+| `acquire(context)` | {{Fresh facade, scoped draft, snapshot, or transaction rule}} |
+| `commit()` | {{Atomic publication, checkpoint, or documented no-op}} |
+| `release(port)` | {{Discard/release behavior; ownership prevents reuse after release}} |
+| `close()` | {{Process-lifetime teardown and later-call behavior}} |
 
-## Operations
+### Commit modes
 
-| Port member | Free entry | Signature | Reads | Mutates/calls | Result |
-| --- | --- | --- | --- | --- | --- |
-| `{{operation}}` | `{{operation}}` | `({{StateType}}, …) → {{resultType}}` | {{fields}} | {{explicit ports or state fields}} | {{meaning}} |
+- **Read-only:** operations only query the snapshot; `commit()` is a documented
+  no-op.
+- **Immediate:** each successful command publishes its returned snapshot;
+  `commit()` is a documented no-op or checkpoint.
+- **Staged:** each acquired port owns a draft snapshot; commands replace that
+  draft; `commit()` validates and publishes it atomically; release without
+  commit discards it.
 
-### `{{operation}}`
+### Concurrency and failure semantics
 
-Explain the public decision, its refused inputs, and every function beneath it.
+- **Concurrent acquisitions:** {{Isolation and shared-resource behavior}}.
+- **Commit:** {{Atomicity, durability, retry, and revision behavior}}.
+- **Release without commit:** {{Discard or immediate-effect behavior}}.
+- **Conflicts:** {{Detection mechanism, returned error, and resolution owner}}.
+- **Faults:** {{Error precedence, rollback, and recovery behavior}}.
+- **Close:** {{Open-port and resource cleanup behavior}}.
+- **Multiple server processes:** {{Durable transaction or compare-and-swap rule;
+  an in-process singleton alone is not cross-process coordination}}.
 
-```mermaid
-flowchart LR
-    Consumer -->|"{{operation}}(args)"| Wrapper["lease wrapper"]
-    Wrapper -->|"{{operation}}(state, args, ports)"| Entry["{{operation}}"]
-    Entry --> Helper["{{supportingFunction}}"]
-    Helper --> State[("{{StateType}}")]
-```
+## Acquired port
 
-```ts
-export const {{operation}} = (
-  state: {{StateType}},
-  {{arguments}}
-): {{resultType}} => {{supportingFunction}}(state, {{argumentNames}});
-```
+{{Describe the exact operations exposed to consumers. The port hides state and
+adapts consumer calls to free state-first model functions.}}
 
-```ts
-export const {{supportingFunction}} = (
-  state: {{StateType}},
-  {{arguments}}
-): {{resultType}} => {
-  // Exact supporting decision.
-};
-```
+```rust
+// port.rs
+pub(crate) trait {{ModelPortContract}} {
+    fn {{query}}(
+        &self,
+        input: {{QueryInput}},
+    ) -> Result<{{QueryResult}}, {{OperationError}}>;
 
-Repeat this subsection for every public operation and list all supporting pure
-functions. A field read may use `state.field`; derived behavior must be a free
-call such as `getBody(state)`.
+    fn {{command}}(
+        &mut self,
+        input: {{CommandInput}},
+    ) -> Result<{{CommandResult}}, {{OperationError}}>;
 
-## Runtime construction and transformation
-
-Name the only production constructor and binder call sites. Explain how runtime
-turns broad runtime context into the exact context/data/ports this model or its
-consumers need.
-
-```mermaid
-sequenceDiagram
-    participant Caller
-    participant Runtime
-    participant Adapter
-    participant Port
-    participant Consumer
-    Caller->>Runtime: admitted input and runtime authority
-    Runtime->>Runtime: create state once
-    Runtime->>Adapter: bind state once
-    Runtime->>Adapter: acquire(exact context)
-    Adapter-->>Runtime: fresh acquired port
-    Runtime->>Consumer: exact translated dependency
-    Runtime->>Port: commit after successful work
-    Runtime->>Adapter: release in finally
-    Runtime->>Adapter: close at owning lifetime end
-```
-
-```ts
-const state = {{createState}}(input);
-const adapter = {{bindState}}(state, explicitDependencies);
-const port = adapter.acquire(exactContext);
-
-try {
-  const result = runConsumer(translate(port));
-  port.commit();
-  return result;
-} finally {
-  adapter.release(port);
+    fn commit(&mut self) -> Result<(), {{CommitError}}>;
 }
 ```
 
-## Concurrency and failure semantics
+The port wrapper contains no domain decisions. It supplies its private snapshot
+to the free operation and retains the returned snapshot:
 
-- **Concurrent acquisitions:** {{isolation and shared-resource behavior}}.
-- **Commit:** {{atomicity, durability, retry, and epoch behavior}}.
-- **Release without commit:** {{discard or immediate-effect behavior}}.
-- **Conflicts:** {{detection and resolution owner}}.
-- **Faults:** {{fault precedence, rollback, and recovery behavior}}.
-- **Close:** {{open-lease and resource cleanup behavior}}.
+```rust
+fn {{command}}(
+    &mut self,
+    input: {{CommandInput}},
+) -> Result<{{CommandResult}}, {{OperationError}}> {
+    let transition = {{command}}(&self.draft_state, input)?;
+    self.draft_state = transition.next_state;
+    Ok(transition.result)
+}
+```
 
-## Boundaries and invariants
+## Operations
 
-- {{Invariant that state is owned and data-only.}}
-- {{Invariant that operations receive state and ports explicitly.}}
-- {{Invariant that the adapter never crosses into pure code.}}
-- {{Invariant about exact context/data and authorization.}}
-- {{Invariant about commit/release/close.}}
+Repeat the appropriate subsection for every public operation and document every
+supporting function beneath it.
+
+### Query: `{{query_function_name}}`
+
+{{Explain the query, its inputs and output, its state reads, and every supporting
+function beneath it.}}
+
+```mermaid
+flowchart LR
+    Port["Acquired port"] -->|"{{query}}(input)"| Query["{{query}}(&state, input)"]
+    Query --> Helper["{{supporting_query}}(&state, ...)"]
+    Helper --> Result["Result"]
+```
+
+```rust
+// methods/<query>/<query>.rs
+pub(crate) fn {{query}}(
+    state: &{{StateType}},
+    input: {{QueryInput}},
+    {{explicit_interfaces_if_any}}
+) -> Result<{{QueryResult}}, {{OperationError}}> {
+    {{supporting_query}}(state, input)
+}
+
+// types/<query>.rs
+pub(crate) struct {{QueryInput}} {
+    // Exact input fields.
+}
+
+pub(crate) struct {{QueryResult}} {
+    // Exact result fields.
+}
+```
+
+```rust
+// methods/<query>/<helper>.rs
+pub(crate) fn {{supporting_query}}(
+    state: &{{StateType}},
+    input: {{SupportingQueryInput}},
+) -> Result<{{SupportingQueryResult}}, {{OperationError}}> {
+    // Exact supporting decision.
+}
+
+// types/<query>.rs
+pub(crate) struct {{SupportingQueryInput}} {
+    // Exact supporting input fields.
+}
+
+pub(crate) struct {{SupportingQueryResult}} {
+    // Exact supporting result fields.
+}
+```
+
+### Command: `{{command_function_name}}`
+
+A command is still a pure state transformation. It receives the current snapshot
+and returns the next snapshot plus its public result.
+
+```mermaid
+flowchart LR
+    Port["Acquired port"] -->|"{{command}}(input)"| Command["{{command}}(&draft, input)"]
+    Command --> Helper["{{supporting_command}}(&draft, ...)"]
+    Helper --> Transition["StateTransition { next_state, result }"]
+    Transition --> Draft["Replace private draft"]
+```
+
+```rust
+// types/transition.rs
+pub(crate) struct StateTransition<State, Output> {
+    pub(crate) next_state: State,
+    pub(crate) result: Output,
+}
+
+// methods/<command>/<command>.rs
+pub(crate) fn {{command}}(
+    state: &{{StateType}},
+    input: {{CommandInput}},
+    {{explicit_interfaces_if_any}}
+) -> Result<
+    StateTransition<{{StateType}}, {{CommandResult}}>,
+    {{OperationError}},
+> {
+    let decision = {{supporting_command}}(state, &input)?;
+
+    Ok(StateTransition {
+        next_state: {{StateType}} {
+            // Build a new snapshot; do not mutate `state`.
+        },
+        result: {{CommandResult}} {
+            // Return consumer-visible output.
+        },
+    })
+}
+
+// types/<command>.rs
+pub(crate) struct {{CommandInput}} {
+    // Exact command fields.
+}
+
+pub(crate) struct {{CommandResult}} {
+    // Exact result fields.
+}
+```
+
+```rust
+// methods/<command>/<helper>.rs
+pub(crate) fn {{supporting_command}}(
+    state: &{{StateType}},
+    input: &{{CommandInput}},
+) -> Result<{{SupportingCommandResult}}, {{OperationError}}> {
+    // Exact supporting decision.
+}
+
+// types/<command>.rs
+pub(crate) struct {{SupportingCommandResult}} {
+    // Exact supporting result fields.
+}
+```
+
+## Explicit mutator interfaces
+
+If an operation must call an effectful mutator, define the smallest required
+interface in the owning model and receive it explicitly. Runtime supplies the
+implementation; tests supply a deterministic fake.
+
+```rust
+// types/<authority>.rs
+pub(crate) trait {{RequiredMutator}} {
+    fn {{mutate}}(
+        &mut self,
+        command: {{MutationCommand}},
+    ) -> Result<{{MutationResult}}, {{MutationError}}>;
+}
+
+// methods/<operation>/<operation>.rs
+pub(crate) fn {{operation_with_authority}}<M: {{RequiredMutator}}>(
+    state: &{{StateType}},
+    input: {{OperationInput}},
+    mutator: &mut M,
+) -> Result<{{OperationResult}}, {{OperationError}}> {
+    // Authority is explicit and replaceable in tests.
+}
+```
+
+This function is authority-pure and deterministically testable, but it is not
+mathematically pure because the supplied interface may mutate external state.
+Prefer returning explicit mutation intents from the functional core when atomic
+commit coordination is required.
+
+## Runtime binding
+
+The server composition root creates one state and binds one adapter. It may store
+an `Arc` to that adapter in the runtime registry, but model operations never read
+that registry.
+
+```rust
+// runtime/.../models/bind.rs
+pub(crate) fn {{build_runtime_model}}(
+    dependencies: {{ModelDependencies}},
+) -> {{ModelAdapter}} {
+    let state = {{create_model_state}}(dependencies);
+    {{bind_state}}(state)
+}
+```
 
 ## Enforcement and evidence
 
-| Guarantee | Static checker | Runtime/unit evidence |
+These checker names are the intended Rust enforcement surface. Mark each as
+implemented only after it has adversarial mutation tests.
+
+| Guarantee | Rust static checker | Runtime/unit evidence |
 | --- | --- | --- |
-| Field-only state | `model-state-is-fields` | `{{test path}}` |
-| Free explicit-state operations | `model-operations-are-free` | `{{test path}}` |
-| Exact lifecycle facade | `model-port-has-one-lifecycle` | `{{test path}}` |
-| Runtime-only construction | `runtime-alone-builds-models` | `{{test path}}` |
-| Closed imports/authority/exports | `pure-island-*` | `{{test path}}` |
-
-## Complete source
-
-Include exact production source for the state, types, port, every operation and
-supporting function, runtime binding, and any admission boundary that materially
-defines the model. Use one labeled TypeScript block per file.
-
-### `{{path/to/file.ts}}`
-
-```ts
-// Exact current source.
-```
+| Data-only state | `rust-model-state-is-data` | `{{test path}}` |
+| Mandatory pure state construction | `rust-model-state-construction` | `{{test path}}` |
+| Free explicit-state operations | `rust-model-operations-are-free` | `{{test path}}` |
+| Functional command transitions | `rust-model-commands-return-transitions` | `{{test path}}` |
+| Exact acquired-port lifecycle | `rust-model-port-has-one-lifecycle` | `{{test path}}` |
+| Runtime-only construction and binding | `rust-runtime-alone-builds-models` | `{{test path}}` |
+| Closed imports, authority, and exports | `rust-pure-island-*` | `{{test path}}` |
+| Staging, commit, release, and conflict semantics | `{{checker if statically provable}}` | `{{test path}}` |
+| {{Other guarantee}} | `{{static checker}}` | `{{test path}}` |
 
 ## Known limits and next proof
 
-{{State what this model does not prove and identify the next model or test needed
-to exercise those semantics.}}
+{{State what this model does not prove and identify the next test needed to
+exercise those semantics.}}
+
+## Complete source
+
+Include exact production source for the module declarations, state, types, port,
+every operation and supporting function, runtime construction, runtime binding,
+and any admission boundary that materially defines the model. Use one labeled
+Rust block per file.
+
+### `{{path/to/file.rs}}`
+
+```rust
+// Exact current source.
+```
